@@ -1,0 +1,1160 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>深空回响 · ECHOES OF DEEP SPACE</title>
+<style>
+:root{--cyan:#7fe7ff;--cyan2:#3fa8c9;--dim:#33506b;--warn:#ff6b6b;--gold:#ffd27f;--txt:#d7ecf5;}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;overflow:hidden;}
+#sky{position:fixed;inset:0;z-index:0;}
+#app{position:relative;z-index:1;height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);}
+
+/* ---------- HUD ---------- */
+#hud{display:none;padding:8px 4px 6px;border-bottom:1px solid rgba(127,231,255,.18);}
+#hudTop{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:6px;}
+#chapterTag{font-size:12px;letter-spacing:3px;color:var(--cyan);opacity:.85;text-shadow:0 0 8px rgba(127,231,255,.5);white-space:nowrap;}
+#hudBtns{display:flex;gap:6px;}
+.hbtn{font-size:13px;padding:3px 8px;border-radius:8px;border:1px solid rgba(127,231,255,.3);background:rgba(20,45,65,.5);color:var(--cyan);cursor:pointer;}
+.hbtn:active{background:rgba(127,231,255,.25);}
+#bars{display:flex;flex-direction:column;gap:4px;}
+.bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#9cc3d4;}
+.bar .lab{width:34px;letter-spacing:1px;flex:none;}
+.bar .num{width:30px;text-align:right;flex:none;font-variant-numeric:tabular-nums;}
+.track{flex:1;height:7px;border-radius:4px;background:rgba(255,255,255,.07);overflow:hidden;border:1px solid rgba(127,231,255,.12);}
+.fill{height:100%;border-radius:4px;transition:width .35s ease,background .35s;}
+#fO2{background:linear-gradient(90deg,#3fa8c9,#7fe7ff);}
+#fEN{background:linear-gradient(90deg,#b28dff,#7fe7ff);}
+#fHP{background:linear-gradient(90deg,#ff9d6b,#ffd27f);}
+.fill.low{background:var(--warn)!important;animation:blink 1s infinite;}
+@keyframes blink{50%{opacity:.45;}}
+
+/* ---------- stage ---------- */
+#stage{flex:1;overflow-y:auto;padding:18px 6px 10px;scrollbar-width:thin;background:linear-gradient(180deg,rgba(2,4,9,0) 0%,rgba(2,4,9,.22) 26%,rgba(2,4,9,.55) 58%,rgba(2,4,9,.88) 100%);}
+#speaker{font-size:13px;letter-spacing:2px;margin-bottom:10px;color:var(--cyan);opacity:.9;text-shadow:0 0 10px rgba(127,231,255,.6);min-height:1.2em;background:linear-gradient(90deg,rgba(6,12,20,.72),rgba(6,12,20,0));border-radius:8px;padding:4px 10px;display:inline-block;margin-left:-6px;}
+#speaker.warm{color:var(--gold);text-shadow:0 0 10px rgba(255,210,127,.55);}
+#speaker.purple{color:#c9a8ff;text-shadow:0 0 10px rgba(170,130,255,.6);}
+#speaker.gray{color:#9cc3d4;text-shadow:none;}
+#text{font-size:16.5px;line-height:1.85;white-space:pre-wrap;word-break:break-word;text-shadow:0 1px 3px rgba(0,0,0,.85);min-height:60px;background:rgba(4,8,14,.42);border-radius:12px;padding:12px 14px;margin:0 -4px;border:1px solid rgba(127,231,255,.08);}
+#text::selection{background:rgba(127,231,255,.3);}
+#choices{display:flex;flex-direction:column;gap:10px;margin-top:22px;padding-bottom:30px;}
+.choice{display:flex;flex-direction:column;gap:2px;width:100%;text-align:left;font-size:15.5px;line-height:1.5;padding:13px 15px;border-radius:12px;color:var(--txt);
+ border:1px solid rgba(127,231,255,.35);background:linear-gradient(180deg,rgba(30,60,85,.55),rgba(14,30,45,.65));cursor:pointer;
+ font-family:inherit;transition:transform .08s ease,border-color .2s;animation:rise .45s ease both;}
+.choice:active{transform:scale(.985);border-color:var(--cyan);background:rgba(127,231,255,.18);}
+.choice:disabled{opacity:.42;cursor:not-allowed;}
+.choice small{font-size:11.5px;color:#7fa8b8;letter-spacing:1px;}
+@keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
+
+/* ---------- battle ---------- */
+#battleBox{display:none;padding:8px 2px;}
+#bEnemy{text-align:center;margin-bottom:8px;}
+#bEnemy .nm{font-size:15px;letter-spacing:3px;color:var(--warn);text-shadow:0 0 10px rgba(255,107,107,.5);}
+.bhp{height:12px;border-radius:6px;background:rgba(255,255,255,.07);border:1px solid rgba(255,107,107,.35);margin-top:7px;overflow:hidden;}
+.bhp .fill{background:linear-gradient(90deg,#b33,#ff6b6b);height:100%;}
+#bLog{margin:14px 2px;font-size:13px;line-height:1.8;color:#9cc3d4;min-height:78px;white-space:pre-wrap;}
+#bLog b{color:var(--txt);}
+#bActs{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
+#bItems{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;}
+#bItems .bi{border-color:rgba(255,210,127,.35);}
+.bact{padding:12px 8px;border-radius:12px;font-size:14px;font-family:inherit;color:var(--txt);border:1px solid rgba(127,231,255,.35);
+ background:linear-gradient(180deg,rgba(30,60,85,.55),rgba(14,30,45,.65));cursor:pointer;}
+.bact:active{transform:scale(.97);border-color:var(--cyan);background:rgba(127,231,255,.18);}
+.bact:disabled{opacity:.35;}
+.bact small{display:block;font-size:10.5px;color:#7fa8b8;margin-top:3px;letter-spacing:1px;}
+
+/* ---------- title / ending ---------- */
+.overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(2,4,9,.55);backdrop-filter:blur(2px);}
+.panel{width:100%;max-width:430px;text-align:center;animation:rise .6s ease;}
+#gameTitle{font-size:38px;letter-spacing:10px;color:#e8fbff;text-shadow:0 0 24px rgba(127,231,255,.75),0 0 60px rgba(127,231,255,.35);margin-bottom:6px;}
+#gameSub{font-size:12px;letter-spacing:5px;color:var(--cyan2);margin-bottom:34px;}
+.mbtn{display:block;width:100%;margin:10px 0;padding:15px;font-size:16px;letter-spacing:4px;border-radius:14px;font-family:inherit;color:var(--txt);cursor:pointer;
+ border:1px solid rgba(127,231,255,.4);background:linear-gradient(180deg,rgba(35,70,100,.6),rgba(15,30,50,.7));}
+.mbtn:active{background:rgba(127,231,255,.2);border-color:var(--cyan);}
+.mbtn.ghost{opacity:.75;}
+#aboutBox{display:none;text-align:left;font-size:13.5px;line-height:1.9;color:#a9ccda;margin-top:16px;padding:14px 16px;border:1px solid rgba(127,231,255,.25);border-radius:12px;background:rgba(10,22,34,.8);}
+#aboutBox b{color:var(--cyan);font-weight:600;}
+#endTitle{font-size:30px;letter-spacing:8px;color:#e8fbff;text-shadow:0 0 26px rgba(255,210,127,.6),0 0 60px rgba(127,231,255,.4);margin-bottom:8px;}
+#endRank{display:inline-block;font-size:13px;letter-spacing:2px;padding:3px 14px;border-radius:20px;border:1px solid rgba(255,210,127,.5);color:var(--gold);margin-bottom:18px;}
+#endText{text-align:left;font-size:14.5px;line-height:1.95;color:var(--txt);white-space:pre-wrap;background:rgba(8,16,26,.72);border:1px solid rgba(127,231,255,.2);border-radius:14px;padding:16px;margin-bottom:16px;}
+#endingsList{font-size:12px;color:#8fb4c6;line-height:2;margin-bottom:14px;letter-spacing:1px;}
+#endingsList .got{color:var(--gold);}
+#endingsList .miss{opacity:.45;}
+#aboutP{font-size:13px;letter-spacing:2px;color:var(--cyan);cursor:pointer;margin-top:14px;display:inline-block;border-bottom:1px dashed rgba(127,231,255,.4);}
+#chPanel{margin-top:14px;}
+#chPanel .mbtn{font-size:14px;padding:12px;margin:6px 0;letter-spacing:2px;}
+#echo{margin-top:14px;font-size:14.5px;line-height:1.9;color:#c9a8ff;text-shadow:0 0 12px rgba(170,130,255,.45);border-left:2px solid rgba(170,130,255,.45);padding:8px 12px;background:rgba(40,22,60,.4);border-radius:8px;white-space:pre-wrap;animation:rise .5s ease both;font-style:italic;}
+#recapBox{margin:10px 0;text-align:left;font-size:12.5px;line-height:1.9;color:#a9ccda;background:rgba(8,16,26,.72);border:1px solid rgba(127,231,255,.2);border-radius:12px;padding:12px 14px;white-space:pre-wrap;}
+#newAch{margin:8px 0 2px;font-size:13px;color:var(--gold);letter-spacing:1px;text-shadow:0 0 10px rgba(255,210,127,.4);}
+#cardBox{margin:12px auto;max-width:300px;}
+#cardBox img{width:100%;border-radius:12px;border:1px solid rgba(127,231,255,.3);display:block;}
+#cardBox small{display:block;text-align:center;color:#8fb4c6;font-size:11.5px;margin-top:6px;letter-spacing:1px;}
+#achPanel{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:300px;overflow-y:auto;}
+.ach{display:flex;gap:10px;align-items:center;text-align:left;padding:8px 12px;border-radius:10px;border:1px solid rgba(127,231,255,.18);background:rgba(12,24,38,.6);}
+.ach .ico{font-size:20px;}
+.ach .nm{font-size:13px;color:var(--txt);}
+.ach .ds{font-size:11px;color:#7fa8b8;}
+.ach.off{opacity:.4;filter:grayscale(1);}
+#achCount{font-size:12px;color:#8fb4c6;letter-spacing:2px;margin-bottom:8px;}
+@media (min-width:640px){#text{font-size:18px;}#gameTitle{font-size:52px;}}
+</style>
+</head>
+<body>
+<canvas id="sky"></canvas>
+<div id="app">
+  <div id="hud">
+    <div id="hudTop">
+      <span id="chapterTag">· 序章 ·</span>
+      <div id="hudBtns">
+        <button class="hbtn" id="sndBtn" onclick="toggleSound()">🔊</button>
+        <button class="hbtn" onclick="go('!title')">☰</button>
+      </div>
+    </div>
+    <div id="bars">
+      <div class="bar"><span class="lab">O₂</span><div class="track"><div class="fill" id="fO2"></div></div><span class="num" id="nO2"></span></div>
+      <div class="bar"><span class="lab">EN</span><div class="track"><div class="fill" id="fEN"></div></div><span class="num" id="nEN"></span></div>
+      <div class="bar"><span class="lab">HP</span><div class="track"><div class="fill" id="fHP"></div></div><span class="num" id="nHP"></span></div>
+    </div>
+  </div>
+  <div id="stage">
+    <div id="speaker"></div>
+    <div id="text"></div>
+    <div id="echo" style="display:none"></div>
+    <div id="choices"></div>
+    <div id="battleBox">
+      <div id="bEnemy"><div class="nm" id="bName"></div><div class="bhp"><div class="fill" id="bEhp"></div></div></div>
+      <div id="bLog"></div>
+      <div id="bActs">
+        <button class="bact" onclick="act('shoot')">脉冲射击<small>EN-12 · 伤害18~34</small></button>
+        <button class="bact" onclick="act('over')">过载射击<small>EN-28 · 伤害42~66</small></button>
+        <button class="bact" onclick="act('shield')">护盾充能<small>船体+25</small></button>
+        <button class="bact" onclick="act('scan')">战术扫描<small>EN-8 · 弱点×1.5</small></button>
+      </div>
+      <div id="bItems">
+        <button class="bact bi" onclick="useItem('o2can')">🧪 氧气罐<small>船体+30 · ×1</small></button>
+        <button class="bact bi" onclick="useItem('bat')">🔋 备用电池<small>能量+25 · ×1</small></button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="overlay" id="titleBox" style="display:none">
+  <div class="panel">
+    <div id="gameTitle">深空回响</div>
+    <div id="gameSub">ECHOES OF DEEP SPACE</div>
+    <button class="mbtn" onclick="newGame()">开始新游戏</button>
+    <button class="mbtn" id="contBtn" onclick="contGame()" style="display:none">继续旅程</button>
+    <button class="mbtn ghost" id="chBtn" onclick="toggleChPanel()" style="display:none">章节选择</button>
+    <div id="chPanel" style="display:none"></div>
+    <button class="mbtn ghost" onclick="toggleAchPanel()">🏆 旅程成就</button>
+    <div id="achPanel" style="display:none"></div>
+    <span id="aboutP" onclick="toggleAbout()">关于本作 ▾</span>
+    <div id="aboutBox">
+      <b>《深空回响》</b> · 一部单文件科幻互动小说。<br>
+      公元 2289 年，打捞船「萤火号」在奥尔特云边缘收到一封求救信——来自两百年前失踪的殖民方舟「伊甸园号」。<br><br>
+      <b>玩法</b>：阅读剧情并做出选择。<br>
+      <b>O₂（氧气）</b>：探索消耗，归零即死亡；<br>
+      <b>EN（能量）</b>：驱动武器与扫描；<br>
+      <b>HP（船体）</b>：战斗中代表你的生命。<br><br>
+      三条资源、三场战斗、七个结局。选择会真的改变故事的走向。点击正文可加速打字。进度自动保存。
+    </div>
+  </div>
+</div>
+<div class="overlay" id="endBox" style="display:none">
+  <div class="panel" style="max-height:94%;overflow-y:auto">
+    <div id="endTitle"></div>
+    <div id="endRank"></div>
+    <div id="endText"></div>
+    <div id="newAch" style="display:none"></div>
+    <div id="endingsList"></div>
+    <div id="recapBox" style="display:none"></div>
+    <div id="cardBox" style="display:none"></div>
+    <button class="mbtn" onclick="newGame()">再玩一次</button>
+    <button class="mbtn" id="copyBtn" onclick="copyRecap()" style="display:none">📋 复制我的旅途</button>
+    <button class="mbtn" id="cardBtn" onclick="genCard()">🖼 生成分享卡</button>
+    <button class="mbtn ghost" onclick="showTitle()">返回标题</button>
+  </div>
+</div>
+<script>
+'use strict';
+/* ================= 基础 ================= */
+const $=s=>document.querySelector(s);
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const SAVEK='deep_space_echoes_save_v1', ENDK='deep_space_echoes_endings_v1';
+const S={node:'',o2:100,en:60,hp:100,flags:{},items:{o2can:1,bat:1},log:[],lastBattle:null,battleRetreat:null,winFx:null,curEnding:null};
+
+/* ================= 音频 ================= */
+const AU={ctx:null,on:true,
+  init(){if(!this.ctx){try{this.ctx=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(this.ctx&&this.ctx.state==='suspended')this.ctx.resume();},
+  tone(f,d,type,vol,delay){if(!this.on||!this.ctx)return;try{
+    const t=this.ctx.currentTime+(delay||0),o=this.ctx.createOscillator(),g=this.ctx.createGain();
+    o.type=type||'sine';o.frequency.value=f;g.gain.setValueAtTime(vol,t);
+    g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(this.ctx.destination);o.start(t);o.stop(t+d+.03);
+  }catch(e){}},
+  ui(){this.tone(760,.05,'square',.028);},
+  tick(){if(Math.random()<.45)this.tone(1500+R(0,400),.014,'sine',.01);},
+  shot(){this.tone(240,.11,'sawtooth',.05);this.tone(100,.14,'square',.04,.02);},
+  hit(){this.tone(130,.2,'square',.06);},
+  warn(){this.tone(880,.22,'sine',.045);this.tone(660,.28,'sine',.045,.14);},
+  win(){this.tone(523,.12,'sine',.05);this.tone(659,.12,'sine',.05,.12);this.tone(784,.22,'sine',.05,.24);},
+  boom(){this.tone(55,.7,'sawtooth',.08);}};
+/* ================= BGM 氛围合成 ================= */
+const MU={timer:null,step:0,mode:'space'};
+const MU_PAD={
+ space:{f:110,scale:[0,3,5,7,10,12,15],gap:1},
+ ship:{f:98,scale:[0,2,3,7,8,10,12],gap:1},
+ station:{f:87.3,scale:[0,2,3,7,8,10,12],gap:1},
+ sanctum:{f:103.8,scale:[0,1,5,7,8,12,13],gap:2},
+ dream:{f:98,scale:[0,2,4,7,9,12,14],gap:1},
+ danger:{f:82.4,scale:[0,1,4,5,7,8,11],gap:1},
+ void:{f:110,scale:[0,4,7,12,16],gap:3}};
+MU.start=function(mode){
+  this.mode=MU_PAD[mode]?mode:'space';
+  if(this.timer){clearInterval(this.timer);this.timer=null;}
+  if(!AU.on)return;
+  AU.init();if(!AU.ctx)return;
+  const self=this;
+  this.timer=setInterval(function(){self.tick();},430);};
+MU.stop=function(){if(this.timer){clearInterval(this.timer);this.timer=null;}};
+MU.tick=function(){
+  const p=MU_PAD[this.mode];if(!p||!AU.ctx)return;
+  this.step++;
+  const f=p.f,sc=p.scale;
+  if(this.step%p.gap===0){
+    const deg=sc[1+Math.floor(Math.random()*(sc.length-1))];
+    AU.tone(f*Math.pow(2,deg/12)*(0.5+Math.random()),0.4,'sine',0.014);}
+  if(this.step%10===0){
+    const root=sc[Math.floor(Math.random()*4)];
+    const notes=[0,3,7,10];
+    for(const n of notes)AU.tone(f*Math.pow(2,(root+n)/12),2.5,'sine',0.011);}
+  if(this.step%20===0)AU.tone(f/2,4.2,'sine',0.02);
+  if(this.mode==='danger'&&this.step%4===0)AU.tone(70,0.09,'square',0.045);};
+
+/* ================= 3D 软渲染引擎 ================= */
+const cv=$('#sky'),cx=cv.getContext('2d');
+let W=0,H=0,T=0,FOC=624;
+function sizeSky(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+const BG={space:[4,7,15],ship:[11,13,19],station:[17,12,23],sanctum:[21,9,27],dream:[26,15,9],danger:[23,5,6],void:[2,2,4]};
+let cur=[4,7,15],tgt=[4,7,15],scene='space',enemyKey=null,lastEnemy={x:0,y:0};
+function setBG(n){scene=n;enemyKey=null;if(BG[n])tgt=BG[n];MU.start(n);}
+function setBattleEnemy(k){enemyKey=k;FX.parts.length=0;FX.beams.length=0;FX.rings.length=0;}
+
+/* ---- 模型构建 ---- */
+function extrudeMesh(prof,d,col){const n=prof.length,verts=[],faces=[];
+  for(let i=0;i<n;i++)verts.push(prof[i][0],-d/2,prof[i][1]);
+  for(let i=0;i<n;i++)verts.push(prof[i][0], d/2,prof[i][1]);
+  const V=(i,s)=>s*n+i;
+  for(let i=0;i<n;i++){const j=(i+1)%n;
+    faces.push({i:[V(i,0),V(j,0),V(j,1)],c:col},{i:[V(i,0),V(j,1),V(i,1)],c:col});}
+  for(let i=1;i<n-1;i++)faces.push({i:[V(0,0),V(i,0),V(i+1,0)],c:col});
+  for(let i=1;i<n-1;i++)faces.push({i:[V(0,1),V(i+1,1),V(i,1)],c:col});
+  return {verts,faces,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1};}
+function prismMesh(r,h,n,col,e){const verts=[],faces=[];
+  for(let i=0;i<n;i++){const a=i/n*6.2832;verts.push(Math.cos(a)*r,Math.sin(a)*r,-h/2);}
+  for(let i=0;i<n;i++){const a=i/n*6.2832;verts.push(Math.cos(a)*r,Math.sin(a)*r,h/2);}
+  for(let i=0;i<n;i++){const j=(i+1)%n;
+    faces.push({i:[i,j,j+n],c:col,e:e},{i:[i,j+n,i+n],c:col,e:e});}
+  for(let i=1;i<n-1;i++)faces.push({i:[0,i,i+1],c:col,e:e});
+  for(let i=1;i<n-1;i++)faces.push({i:[n,n+i+1,n+i],c:col,e:e});
+  return {verts,faces,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1};}
+function octaMesh(r,col){const v=[[r,0,0],[-r,0,0],[0,r,0],[0,0,r],[0,-r,0],[0,0,-r]];
+  const f=[[0,2,3],[0,3,4],[0,4,5],[0,5,2],[1,3,2],[1,4,3],[1,5,4],[1,2,5]];
+  return {verts:v.flat(),faces:f.map(x=>({i:x,c:col})),pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1};}
+function torusMesh(R,r,m,n,col,eCol){const verts=[],faces=[];
+  for(let i=0;i<m;i++){const a=i/m*6.2832;
+    for(let j=0;j<n;j++){const b=j/n*6.2832;
+      verts.push((R+r*Math.cos(b))*Math.cos(a),(R+r*Math.cos(b))*Math.sin(a),r*Math.sin(b));}}
+  const V=(i,j)=>(i%m)*n+(j%n);
+  for(let i=0;i<m;i++)for(let j=0;j<n;j++){
+    const lit=Math.random()<0.085;
+    const C=lit?eCol:col,ph=Math.random()*6.28;
+    faces.push({i:[V(i,j),V(i+1,j),V(i+1,j+1)],c:C,e:lit?1:0,ph:ph},
+               {i:[V(i,j),V(i+1,j+1),V(i,j+1)],c:C,e:lit?1:0,ph:ph});}
+  return {verts,faces,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1};}
+function sphereMesh(R,lat,lng){const verts=[],faces=[];
+  for(let i=0;i<=lat;i++){const b=Math.PI*i/lat;
+    for(let j=0;j<lng;j++){const a=6.2832*j/lng;
+      verts.push(R*Math.sin(b)*Math.cos(a),R*Math.sin(b)*Math.sin(a),R*Math.cos(b));}}
+  const V=(i,j)=>i*lng+(j%lng);
+  for(let i=0;i<lat;i++)for(let j=0;j<lng;j++)
+    faces.push({i:[V(i,j),V(i+1,j),V(i+1,j+1)],c:[10,7,16],w:1},
+               {i:[V(i,j),V(i+1,j+1),V(i,j+1)],c:[10,7,16],w:1});
+  return {verts,faces,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1,cull:true};}
+function merge(list){const verts=[],faces=[];
+  for(const m of list){const off=verts.length/3;
+    for(let i=0;i<m.verts.length;i++)verts.push(m.verts[i]);
+    for(const f of m.faces)faces.push({i:[f.i[0]+off,f.i[1]+off,f.i[2]+off],c:f.c,e:f.e,w:f.w,ph:f.ph});}
+  return {verts,faces,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1};}
+function seaMesh(nx,nz){const verts=[],faces=[],X0=-2.6,X1=2.6,Z0=-1.6,Z1=3.4;
+  const C0=[18,34,60],C1=[152,88,50];
+  for(let i=0;i<=nz;i++)for(let j=0;j<=nx;j++){
+    verts.push(X0+(X1-X0)*j/nx,0,Z0+(Z1-Z0)*i/nz);}
+  const V=(i,j)=>i*(nx+1)+j;
+  for(let i=0;i<nz;i++)for(let j=0;j<nx;j++){
+    const k=(i/nz),c=[C0[0]+(C1[0]-C0[0])*k|0,C0[1]+(C1[1]-C0[1])*k|0,C0[2]+(C1[2]-C0[2])*k|0];
+    faces.push({i:[V(i,j),V(i+1,j),V(i+1,j+1)],c:c},{i:[V(i,j),V(i+1,j+1),V(i,j+1)],c:c});}
+  return {verts,faces,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1,cull:false};}
+
+/* ---- 场景模型 ---- */
+const M={};
+function buildAll(){
+  M.ship=merge([
+    extrudeMesh([[1.0,0],[0.62,0.3],[0,0.36],[-0.55,0.3],[-1.0,0.1],[-1.0,-0.1],[-0.5,-0.26],[0.25,-0.26]],0.4,[112,146,168]),
+    {verts:prismMesh(0.16,1.05,6,[74,84,98]).verts,faces:prismMesh(0.16,1.05,6,[74,84,98]).faces,pos:[-0.62,-0.06,0.42],rot:[0,0,Math.PI/2],sc:1},
+    {verts:prismMesh(0.16,1.05,6,[74,84,98]).verts,faces:prismMesh(0.16,1.05,6,[74,84,98]).faces,pos:[-0.62,-0.06,-0.42],rot:[0,0,Math.PI/2],sc:1},
+    {verts:prismMesh(0.13,0.55,5,[82,205,232],1).verts,faces:prismMesh(0.13,0.55,5,[82,205,232],1).faces,pos:[0.3,0.5,0],rot:[0,0,Math.PI/2],sc:1},
+    {verts:extrudeMesh([[0.45,0],[0,0.07],[-0.45,0]],0.05,[96,110,126]).verts,faces:extrudeMesh([[0.45,0],[0,0.07],[-0.45,0]],0.05,[96,110,126]).faces,pos:[0.05,-0.32,0.3],rot:[0,0,0.35],sc:1},
+    {verts:extrudeMesh([[0.45,0],[0,0.07],[-0.45,0]],0.05,[96,110,126]).verts,faces:extrudeMesh([[0.45,0],[0,0.07],[-0.45,0]],0.05,[96,110,126]).faces,pos:[0.05,-0.32,-0.3],rot:[0,0,-0.35],sc:1}]);
+  M.ark=merge([
+    torusMesh(1.7,0.16,16,8,[96,110,128],[255,214,150]),
+    {verts:prismMesh(0.3,0.5,8,[120,130,150]).verts,faces:prismMesh(0.3,0.5,8,[120,130,150]).faces,pos:[0,0,0],rot:[0,0,0],sc:1},
+    {verts:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).verts,faces:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).faces,pos:[0,0,0],rot:[0,0,0],sc:1},
+    {verts:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).verts,faces:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).faces,pos:[0,0,0],rot:[0,0,Math.PI/2],sc:1},
+    {verts:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).verts,faces:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).faces,pos:[0,0,0],rot:[0,0,Math.PI],sc:1},
+    {verts:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).verts,faces:extrudeMesh([[0.25,0],[1.5,0]],0.09,[86,96,112]).faces,pos:[0,0,0],rot:[0,0,Math.PI*1.5],sc:1}]);
+  M.sphere=sphereMesh(1.15,10,14);
+  M.sea=seaMesh(20,9);
+  M.lighthouse=merge([{verts:prismMesh(0.07,0.6,6,[222,222,232]).verts,faces:prismMesh(0.07,0.6,6,[222,222,232]).faces,pos:[0.8,-0.3,2.2],rot:[0,0,0],sc:1}]);
+  M.drone=merge([
+    octaMesh(0.5,[96,100,112]),
+    {verts:octaMesh(0.24,[150,46,46]).verts,faces:octaMesh(0.24,[150,46,46]).faces,pos:[0,0.42,0],rot:[0,0,0],sc:1}]);
+  M.rotor=merge([
+    extrudeMesh([[0,0],[0.72,0.02]],0.05,[70,76,88]),
+    {verts:extrudeMesh([[0,0],[0.72,0.02]],0.05,[70,76,88]).verts,faces:extrudeMesh([[0,0],[0.72,0.02]],0.05,[70,76,88]).faces,pos:[0,0,0],rot:[0,0,Math.PI/2],sc:1}]);
+  const mem1=merge([
+    {verts:octaMesh(0.3,[185,195,210]).verts,faces:octaMesh(0.3,[185,195,210]).faces,pos:[0,0.1,0],rot:[0,0,0],sc:[1,1.75,1]},
+    {verts:octaMesh(0.15,[200,208,222]).verts,faces:octaMesh(0.15,[200,208,222]).faces,pos:[0,0.8,0],rot:[0,0,0],sc:1}]);
+  M.memories=merge([mem1,
+    {verts:mem1.verts,faces:mem1.faces,pos:[0.62,0,0],rot:[0,0.1,0],sc:1}]);
+  M.memories.alpha=0.62;
+  M.guard=merge([
+    octaMesh(0.85,[150,90,200]),
+    {verts:octaMesh(0.55,[120,70,180]).verts,faces:octaMesh(0.55,[120,70,180]).faces,pos:[0,0.62,0],rot:[0,0,0],sc:1},
+    {verts:octaMesh(0.34,[90,50,150]).verts,faces:octaMesh(0.34,[90,50,150]).faces,pos:[0,1.18,0],rot:[0,0,0],sc:1},
+    {verts:octaMesh(0.2,[200,140,230]).verts,faces:octaMesh(0.2,[200,140,230]).faces,pos:[0.95,0,0],rot:[0,0,0],sc:1},
+    {verts:octaMesh(0.2,[200,140,230]).verts,faces:octaMesh(0.2,[200,140,230]).faces,pos:[-0.95,0,0],rot:[0,0,0],sc:1},
+    {verts:octaMesh(0.2,[200,140,230]).verts,faces:octaMesh(0.2,[200,140,230]).faces,pos:[0,0.9,0],rot:[0,0,0],sc:1},
+    {verts:octaMesh(0.2,[200,140,230]).verts,faces:octaMesh(0.2,[200,140,230]).faces,pos:[0,-0.9,0],rot:[0,0,0],sc:1}]);
+  M.stars=[];
+  const n=W<600?110:170;
+  for(let i=0;i<n;i++){const a=Math.random()*6.2832,b=Math.acos(2*Math.random()-1);
+    M.stars.push({x:Math.sin(b)*Math.cos(a),y:Math.sin(b)*Math.sin(a),z:Math.cos(b),ph:Math.random()*6.28,s:Math.random()*.8+.4});}
+  M.orb=[];
+  for(let i=0;i<60;i++)M.orb.push({a:Math.random()*6.28,ra:1.55+Math.random()*0.7,rb:0.95+Math.random()*0.5,sp:0.18+Math.random()*0.5,ph:Math.random()*6.28});
+}
+/* ---- 变换与渲染 ---- */
+const WVS=new Float32Array(4096);
+function xformVerts(m,out){
+  const v=m.verts,pos=m.pos,sc=m.sc;
+  const scx=Array.isArray(sc)?sc[0]:sc,scy=Array.isArray(sc)?sc[1]:sc,scz=Array.isArray(sc)?sc[2]:sc;
+  const rx=m.rot[0],ry=m.rot[1],rz=m.rot[2];
+  const crx=Math.cos(rx),srx=Math.sin(rx),cry=Math.cos(ry),sry=Math.sin(ry),crz=Math.cos(rz),srz=Math.sin(rz);
+  for(let i=0;i<v.length;i+=3){
+    let x=v[i]*scx,y=v[i+1]*scy,z=v[i+2]*scz;
+    if(rx){const y1=y*crx-z*srx,z1=y*srx+z*crx;y=y1;z=z1;}
+    if(ry){const x1=x*cry+z*sry,z1=-x*sry+z*cry;x=x1;z=z1;}
+    if(rz){const x1=x*crz-y*srz,y1=x*srz+y*crz;x=x1;y=y1;}
+    out[i]=x+pos[0];out[i+1]=y+pos[1];out[i+2]=z+pos[2];}}
+function renderMesh(mesh,opt){
+  opt=opt||{};
+  const m=mesh,F=FOC,out=WVS,alpha=opt.alpha!==undefined?opt.alpha:(m.alpha||1);
+  const wireA=m.wireA!==undefined?m.wireA:0.55;
+  xformVerts(m,out);
+  cx.globalAlpha=alpha;
+  const camZ=6,list=[];
+  for(let fi=0;fi<m.faces.length;fi++){
+    const f=m.faces[fi],i0=f.i[0]*3,i1=f.i[1]*3,i2=f.i[2]*3;
+    const ax=out[i0],ay=out[i0+1],az=out[i0+2];
+    const bx=out[i1],by=out[i1+1],bz=out[i1+2];
+    const gx=out[i2],gy=out[i2+1],gz=out[i2+2];
+    const ux=bx-ax,uy=by-ay,uz=bz-az,wx=gx-ax,wy=gy-ay,wz=gz-az;
+    const nx=uy*wz-uz*wy,ny=uz*wx-ux*wz,nz=ux*wy-uy*wx;
+    if(m.cull!==false){
+      const mx=(ax+bx+gx)/3,my=(ay+by+gy)/3,mz=(az+bz+gz)/3;
+      if(nx*mx+ny*my+nz*(mz-camZ)>=0)continue;}
+    const d1=camZ-az,d2=camZ-bz,d3=camZ-gz;
+    if(d1<0.4||d2<0.4||d3<0.4)continue;
+    const s1=F/d1,s2=F/d2,s3=F/d3;
+    let k=0.5;
+    const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+    k+=0.5*Math.max(0,(nx*0.42+ny*0.62+nz*0.66)/nl);
+    list.push({z:(az+bz+gz)/3,
+      p1x:W/2+ax*s1,p1y:H*0.30-ay*s1,
+      p2x:W/2+bx*s2,p2y:H*0.30-by*s2,
+      p3x:W/2+gx*s3,p3y:H*0.30-gy*s3,f,k});}
+  list.sort((a,b)=>b.z-a.z);
+  for(const it of list){const f=it.f;
+    let k2=it.k;
+    if(f.e)k2=0.72+0.28*Math.sin(T*2.1+(f.ph||0));
+    cx.fillStyle='rgb('+(f.c[0]*k2|0)+','+(f.c[1]*k2|0)+','+(f.c[2]*k2|0)+')';
+    cx.beginPath();cx.moveTo(it.p1x,it.p1y);cx.lineTo(it.p2x,it.p2y);cx.lineTo(it.p3x,it.p3y);cx.closePath();cx.fill();
+    if(f.w){cx.strokeStyle='rgba(255,214,140,'+wireA+')';cx.lineWidth=.7;cx.stroke();}}
+  cx.globalAlpha=1;}
+/* ---- 粒子与特效 ---- */
+const FX={parts:[],beams:[],rings:[],flash:0,flashE:0};
+FX.spawn=function(x,y,z,vx,vy,vz,life,col,sz){this.parts.push({x,y,z,vx,vy,vz,life,col,sz});};
+FX.burst=function(x,y,z,n,col,spd){for(let i=0;i<n;i++){const a=Math.random()*6.2832,b=Math.random()*Math.PI-1.2;
+  const s=spd*(0.4+Math.random()*0.8);
+  this.spawn(x,y,z,Math.cos(a)*Math.cos(b)*s,Math.sin(b)*s*0.8+0.3,Math.sin(a)*Math.cos(b)*s,0.8+Math.random()*0.5,col,1.6);}};
+FX.fireBeam=function(){this.beams.push({x1:W*0.14,y1:H*0.84,x2:lastEnemy.x,y2:lastEnemy.y,t0:T,life:0.22});};
+FX.hitEnemy=function(){this.burst(0,0.4,-0.2,14,'rgba(255,210,140,',2.2);this.flashE=0.25;};
+FX.playerHit=function(){this.flash=0.5;};
+FX.shield=function(){this.rings.push({t0:T,life:0.55});};
+FX.explode=function(){this.burst(0,0.5,-0.2,40,'rgba(255,160,80,',3.4);this.burst(0,0.5,-0.2,20,'rgba(255,230,180,',2);this.flash=0.3;};
+function projP(x,y,z){const d=6-z;if(d<0.4)return null;const s=FOC/d;
+  return [W/2+x*s,H*0.30-y*s,s];}
+function drawFX(){
+  for(let i=FX.parts.length-1;i>=0;i--){const p=FX.parts[i];
+    p.life-=0.016;p.x+=p.vx*0.016;p.y+=p.vy*0.016;p.z+=p.vz*0.016;
+    if(p.life<=0){FX.parts.splice(i,1);continue;}
+    const d=6-p.z;if(d<0.4)continue;const s=FOC/d;
+    const sx=W/2+p.x*s,sy=H*0.30-p.y*s;
+    cx.globalAlpha=Math.min(1,p.life*2.2);
+    cx.fillStyle=p.col+'0.9)';
+    cx.beginPath();cx.arc(sx,sy,Math.max(0.5,p.sz*s/7),0,6.29);cx.fill();}
+  cx.globalAlpha=1;
+  for(let i=FX.beams.length-1;i>=0;i--){const b=FX.beams[i];
+    const k=(T-b.t0)/b.life;if(k>=1){FX.beams.splice(i,1);continue;}
+    cx.strokeStyle='rgba(127,231,255,'+(1-k).toFixed(2)+')';cx.lineWidth=3.5*(1-k)+1;
+    cx.beginPath();cx.moveTo(b.x1,b.y1);cx.lineTo(b.x2,b.y2);cx.stroke();
+    cx.strokeStyle='rgba(255,255,255,'+(1-k).toFixed(2)+')';cx.lineWidth=1.3;
+    cx.beginPath();cx.moveTo(b.x1,b.y1);cx.lineTo(b.x2,b.y2);cx.stroke();}
+  for(let i=FX.rings.length-1;i>=0;i--){const r=FX.rings[i];
+    const k=(T-r.t0)/r.life;if(k>=1){FX.rings.splice(i,1);continue;}
+    cx.strokeStyle='rgba(127,231,255,'+((1-k)*0.8).toFixed(2)+')';cx.lineWidth=2;
+    cx.beginPath();cx.arc(W*0.15,H*0.85,10+k*52,0,6.29);cx.stroke();}
+  if(FX.flash>0){FX.flash-=0.045;
+    cx.fillStyle='rgba(255,45,45,'+Math.max(0,FX.flash).toFixed(2)+')';cx.fillRect(0,0,W,H);}
+  if(FX.flashE>0){FX.flashE-=0.04;
+    const p=projP(0,0.4,-0.2);if(p){const r=Math.max(10,p[2]*0.55)*(1+FX.flashE*1.5);
+    cx.fillStyle='rgba(255,255,255,'+(FX.flashE*0.55).toFixed(2)+')';
+    cx.beginPath();cx.arc(p[0],p[1],r,0,6.29);cx.fill();}}}
+/* ---- 星空 ---- */
+function drawStars(){
+  const ry=T*0.02,cy=Math.cos(ry),sy=Math.sin(ry);
+  const warm=scene==='dream';
+  for(let i=0;i<M.stars.length;i++){const st=M.stars[i];
+    if(warm&&i%3!==0)continue;
+    const x=st.x*cy+st.z*sy;
+    const a=0.22+0.7*Math.abs(Math.sin(st.ph+T*1.2));
+    if(warm)cx.fillStyle='rgba(255,205,150,'+(a*0.5).toFixed(2)+')';
+    else cx.fillStyle='rgba(190,225,255,'+(a*0.9).toFixed(2)+')';
+    cx.beginPath();cx.arc(W/2+x*FOC,H*0.30-st.y*FOC,st.s,0,6.29);cx.fill();}}
+/* ---- 场景渲染 ---- */
+function renderShip(){
+  const m=M.ship;
+  m.rot=[Math.sin(T*0.35)*0.05,Math.sin(T*0.2)*0.08,0];
+  m.pos=[0,Math.sin(T*0.6)*0.06,0];
+  renderMesh(m);
+  if(Math.random()<0.55)FX.spawn(-1.15,-0.06+Math.random()*0.1,0.42,-0.8+Math.random()*0.3,(Math.random()-0.5)*0.25,(Math.random()-0.5)*0.2,0.5,'rgba(110,215,255,',1.3);
+  if(Math.random()<0.55)FX.spawn(-1.15,-0.06+Math.random()*0.1,-0.42,-0.8+Math.random()*0.3,(Math.random()-0.5)*0.25,(Math.random()-0.5)*0.2,0.5,'rgba(110,215,255,',1.3);}
+function renderArk(near){
+  const m=M.ark;
+  m.rot=[0.12,Math.sin(T*0.1)*0.5+T*0.12,0.06];
+  if(near){m.pos=[0.4,0.35,-1.2];m.sc=1.5;}
+  else{m.pos=[0,-0.35,0];m.sc=0.82;}
+  renderMesh(m);
+  if(!near){const p=projP(0,1.86,0);
+    if(p){const a=0.4+0.6*Math.abs(Math.sin(T*1.6));
+      cx.fillStyle='rgba(120,255,180,'+a.toFixed(2)+')';
+      cx.beginPath();cx.arc(p[0],p[1],2.6,0,6.29);cx.fill();}}}
+function renderSanctum(){
+  const m=M.sphere;
+  m.rot=[0.3,T*0.14,0.06];
+  m.pos=[0,0,0];m.sc=1+Math.sin(T*0.6)*0.03;
+  m.wireA=0.3+0.25*Math.abs(Math.sin(T*1.3));
+  renderMesh(m);
+  for(const o of M.orb){
+    const x=Math.cos(T*o.sp+o.a)*o.ra,z=Math.sin(T*o.sp*1.3+o.a)*o.rb;
+    const y=Math.sin(T*o.sp+o.a)*o.rb*0.55;
+    const p=projP(x,y,z);if(!p)continue;
+    const a=0.35+0.6*Math.abs(Math.sin(T*1.7+o.ph));
+    cx.fillStyle='rgba(255,205,140,'+a.toFixed(2)+')';
+    cx.beginPath();cx.arc(p[0],p[1],Math.max(0.6,p[2]/6*1.4),0,6.29);cx.fill();}
+  const p=projP(0,0,0);
+  if(p){const g=cx.createRadialGradient(p[0],p[1],0,p[0],p[1],p[2]*0.9);
+    g.addColorStop(0,'rgba(255,180,110,0.10)');g.addColorStop(1,'rgba(255,180,110,0)');
+    cx.fillStyle=g;cx.beginPath();cx.arc(p[0],p[1],p[2]*0.9,0,6.29);cx.fill();}}
+function renderSea(){
+  const m=M.sea,v=m.verts;
+  for(let i=0;i<=9;i++)for(let j=0;j<=20;j++){
+    const k=i*21+j;const x=v[k*3],z=v[k*3+2];
+    v[k*3+1]=-0.18+Math.sin(x*2.4+T*1.3)*0.045+Math.sin(z*2.1+T*0.9)*0.05+Math.sin((x+z)*3.2+T*1.6)*0.02;}
+  m.rot=[0,0,0];m.pos=[0,0.1,0];
+  renderMesh(m);
+  const lh=M.lighthouse;
+  lh.rot=[0,Math.sin(T*0.5)*0.05,0];
+  renderMesh(lh);
+  const p=projP(0.8,0.05,2.2);
+  if(p){const a=0.5+0.5*Math.sin(T*2.6);
+    cx.fillStyle='rgba(255,215,140,'+(0.35+0.65*a).toFixed(2)+')';
+    cx.beginPath();cx.arc(p[0],p[1],2.6,0,6.29);cx.fill();}}
+function renderVoid(){
+  const g=cx.createRadialGradient(W/2,H*0.3,0,W/2,H*0.3,H*0.55);
+  g.addColorStop(0,'rgba(255,220,170,0.14)');g.addColorStop(1,'rgba(255,220,170,0)');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H);
+  if(Math.random()<0.12)FX.spawn((Math.random()-0.5)*2.2,-0.7,(Math.random()-0.5)*2,(Math.random()-0.25)*0.2,0.55+Math.random()*0.5,0,2.4,'rgba(255,215,150,',1.5);}
+function renderDanger(){
+  const m=M.ark;
+  m.rot=[0.12,T*0.06,0.05];m.pos=[0,-0.6,1.5];m.sc=0.55;
+  renderMesh(m,{alpha:0.22});
+  const em=enemyKey==='drone'?M.drone:enemyKey==='guard'?M.guard:M.memories;
+  if(enemyKey==='drone'){
+    em.rot=[0,T*0.7,Math.sin(T*1.3)*0.12];em.pos=[0,Math.sin(T*1.1)*0.1,-0.2];
+    renderMesh(em);
+    const rt=M.rotor;
+    rt.rot=[0,0,T*14];rt.pos=[0,0.88+Math.sin(T*1.1)*0.1,-0.2];
+    renderMesh(rt);}
+  else if(enemyKey==='guard'){
+    em.rot=[0,T*0.35,0];em.pos=[0,Math.sin(T*0.8)*0.12,-0.2];
+    renderMesh(em);}
+  else{
+    em.rot=[0,Math.sin(T*0.4)*0.2,0];em.pos=[0,Math.sin(T*0.9)*0.06,0];
+    renderMesh(em);}
+  const p=projP(0,0.4,-0.2);if(p){lastEnemy.x=p[0];lastEnemy.y=p[1];}
+  const pa=(0.5+0.5*Math.sin(T*2.2))*0.16;
+  cx.strokeStyle='rgba(255,60,60,'+pa.toFixed(2)+')';cx.lineWidth=12;
+  cx.strokeRect(6,6,W-12,H-12);}
+function dreamSky(){
+  const g=cx.createLinearGradient(0,0,0,H*0.52);
+  g.addColorStop(0,'#2b1b33');g.addColorStop(0.55,'#8a4a2e');g.addColorStop(1,'#e88f52');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H*0.52);
+  const sg=cx.createRadialGradient(W*0.66,H*0.34,0,W*0.66,H*0.34,H*0.14);
+  sg.addColorStop(0,'rgba(255,214,150,0.95)');sg.addColorStop(0.35,'rgba(255,170,90,0.7)');sg.addColorStop(1,'rgba(255,170,90,0)');
+  cx.fillStyle=sg;cx.beginPath();cx.arc(W*0.66,H*0.34,H*0.14,0,6.29);cx.fill();}
+function vignette(){
+  let g=cx.createLinearGradient(0,0,0,H*0.16);
+  g.addColorStop(0,'rgba(1,3,8,0.55)');g.addColorStop(1,'rgba(1,3,8,0)');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H*0.16);
+  g=cx.createLinearGradient(0,H,0,H*0.72);
+  g.addColorStop(0,'rgba(1,3,8,0.82)');g.addColorStop(1,'rgba(1,3,8,0)');
+  cx.fillStyle=g;cx.fillRect(0,H*0.72,W,H*0.28);
+  g=cx.createLinearGradient(0,0,W*0.07,0);
+  g.addColorStop(0,'rgba(1,3,8,0.4)');g.addColorStop(1,'rgba(1,3,8,0)');
+  cx.fillStyle=g;cx.fillRect(0,0,W*0.07,H);
+  g=cx.createLinearGradient(W,0,W*0.93,0);
+  g.addColorStop(0,'rgba(1,3,8,0.4)');g.addColorStop(1,'rgba(1,3,8,0)');
+  cx.fillStyle=g;cx.fillRect(W*0.93,0,W*0.07,H);}
+function renderFrame(t){
+  T=t/1000;FOC=Math.min(W,H)*1.6;
+  for(let i=0;i<3;i++)cur[i]+=(tgt[i]-cur[i])*.025;
+  if(scene==='dream')dreamSky();
+  else{cx.fillStyle='rgb('+(cur[0]|0)+','+(cur[1]|0)+','+(cur[2]|0)+')';cx.fillRect(0,0,W,H);}
+  drawStars();
+  if(scene==='space')renderShip();
+  else if(scene==='ship')renderArk(true);
+  else if(scene==='station')renderArk(false);
+  else if(scene==='sanctum')renderSanctum();
+  else if(scene==='dream')renderSea();
+  else if(scene==='danger')renderDanger();
+  else if(scene==='void')renderVoid();
+  drawFX();
+  vignette();
+  requestAnimationFrame(renderFrame);}
+
+/* ================= 存档 ================= */
+function save(){try{localStorage.setItem(SAVEK,JSON.stringify(S))}catch(e){}}
+function loadSave(){try{const s=localStorage.getItem(SAVEK);if(!s)return false;
+  const o=JSON.parse(s);if(!o.node||!NODES[o.node])return false;
+  S.node=o.node;S.o2=o.o2;S.en=o.en;S.hp=o.hp;S.flags=o.flags||{};S.items=o.items||{o2can:1,bat:1};S.log=o.log||[];S.lastBattle=o.lastBattle||null;S.battleRetreat=o.battleRetreat||null;return true;}catch(e){return false}}
+function clearSave(){try{localStorage.removeItem(SAVEK)}catch(e){}}
+function loadEndings(){try{return JSON.parse(localStorage.getItem(ENDK))||{}}catch(e){return{}}}
+
+/* ================= 条件 / 效果 ================= */
+function condOk(c){if(!c)return true;
+  return c.split(',').every(one=>{one=one.trim();
+    const m=one.match(/^([a-z_]+)\s*(>=|<=|==|!=|>|<)\s*(-?\d+)$/);
+    if(m){const v=S[m[1]]??0,n=+m[3];
+      switch(m[2]){case'>=':return v>=n;case'<=':return v<=n;case'>':return v>n;case'<':return v<n;case'==':return v==n;case'!=':return v!=n;}}
+    if(one.startsWith('!flag:'))return !S.flags[one.slice(6)];
+    if(one.startsWith('flag:'))return !!S.flags[one.slice(4)];
+    return true;});}
+function condHint(c){if(!c)return'';
+  const p=c.split(',')[0].trim(),m=p.match(/^([a-z_]+)\s*(>=|<=|==|!=|>|<)\s*(-?\d+)$/);
+  if(m){const n={o2:'氧气',en:'能量',hp:'船体'}[m[1]]||m[1];return'（需'+n+m[2]+m[3]+'）';}
+  if(p.startsWith('flag:'))return'（需特定条件）';
+  return'';}
+function applyFx(fx){if(!fx)return;
+  for(const k of Object.keys(fx)){const v=fx[k];
+    if(k==='flag'||k==='flag2')S.flags[v]=true;
+    else if(k==='unflag')delete S.flags[v];
+    else if(k==='item'){S.items[v]=(S.items[v]||0)+1;}
+    else if(k==='log'){S.log.push(v);if(S.log.length>60)S.log.shift();}
+    else if(typeof v==='string'&&v.startsWith('='))S[k]=+v.slice(1);
+    else S[k]=(S[k]??0)+v;}
+  S.o2=Math.max(0,S.o2);S.en=Math.max(0,S.en);S.hp=Math.max(0,S.hp);
+  updateHud();}
+
+/* ================= HUD ================= */
+function updateHud(){
+  $('#nO2').textContent=S.o2;$('#fO2').style.width=S.o2+'%';$('#fO2').classList.toggle('low',S.o2<=25);
+  $('#nEN').textContent=S.en;$('#fEN').style.width=S.en+'%';$('#fEN').classList.toggle('low',S.en<=15);
+  $('#nHP').textContent=S.hp;$('#fHP').style.width=Math.min(100,S.hp)+'%';$('#fHP').classList.toggle('low',S.hp<=30);
+  $('#sndBtn').textContent=AU.on?'🔊':'🔇';}
+function toggleSound(){AU.on=!AU.on;updateHud();
+  if(AU.on){AU.init();AU.ui();MU.start(scene);}else MU.stop();}
+
+/* ================= 打字机 ================= */
+let typing=null;
+function typeInto(el,text,cb){
+  if(typing)clearInterval(typing);typing=null;
+  let i=0,done=false;el.textContent='';
+  const finish=()=>{if(done)return;done=true;if(typing)clearInterval(typing);typing=null;el.textContent=text;cb&&cb();};
+  typing=setInterval(()=>{i+=2;el.textContent=text.slice(0,i);AU.tick();
+    if(i>=text.length){clearInterval(typing);typing=null;finish();}},26);
+  el.onclick=finish;}
+
+/* ================= 渲染 ================= */
+function go(to){
+  if(to==='!title'){showTitle();return;}
+  if(to==='!battle'){if(NODES[S.lastBattle])startBattle(NODES[S.lastBattle],S.lastBattle);return;}
+  if(to==='!retreat'){showNode(S.battleRetreat);return;}
+  showNode(to);}
+function showNode(id){
+  const n=NODES[id];
+  if(!n){showTitle();return;}
+  S.node=id;applyFx(n.fx);
+  if(CHMAP[id])unlockChapter(CHMAP[id]);
+  if(S.flags.trust_aiden)unlockAch('kind');
+  if(S.flags.scan_aiden)unlockAch('detective');
+  if(S.flags.dream_seen)unlockAch('dreamer');
+  if(S.o2<=0||S.hp<=0){return showEnding('ending_death');}
+  if(n.type==='ending'){return showEnding(id);}
+  if(n.type==='battle'){return startBattle(n,id);}
+  save();
+  $('#endBox').style.display='none';$('#titleBox').style.display='none';
+  $('#hud').style.display='block';
+  $('#battleBox').style.display='none';$('#text').style.display='';$('#choices').style.display='';
+  $('#echo').style.display='none';
+  $('#stage').scrollTop=0;
+  setBG(n.bg||'space');
+  $('#chapterTag').textContent=n.ch?('· '+n.ch+' ·'):'· 深空回响 ·';
+  const sp=$('#speaker');sp.textContent=n.who||'';
+  sp.className=n.whoClass||'';
+  let txt=n.text||'';
+  if(n.alt)for(const a of n.alt)if(condOk(a.cond)){txt=a.text;break;}
+  $('#choices').innerHTML='';
+  typeInto($('#text'),txt,()=>{renderChoices(n.choices||[]);showEcho(id);});}
+function renderChoices(list){
+  const c=$('#choices');c.innerHTML='';
+  list.forEach((ch,i)=>{
+    const ok=condOk(ch.cond);
+    const b=document.createElement('button');
+    b.className='choice'+(ok?'':'');
+    b.style.animationDelay=(i*70)+'ms';
+    b.innerHTML=ch.t.replace(/</g,'&lt;')+(ok?'':'<small>'+condHint(ch.cond)+'</small>');
+    b.disabled=!ok;
+    b.onclick=()=>{AU.init();AU.ui();applyFx(ch.fx);go(ch.to);};
+    c.appendChild(b);});}
+
+/* ================= 战斗 ================= */
+let BS=null;
+function startBattle(n,id){
+  S.lastBattle=id;S.battleRetreat=n.retreat||'a1_hub';S.winFx=n.winFx||null;save();
+  BS={id:id,enemy:{name:n.enemy.name,hp:n.enemy.hp,max:n.enemy.hp,atk:n.enemy.atk},skill:n.enemy.skill||null,turn:0,scanned:false,busy:false};
+  $('#endBox').style.display='none';$('#titleBox').style.display='none';$('#hud').style.display='block';
+  $('#text').style.display='none';$('#choices').style.display='none';
+  $('#battleBox').style.display='block';$('#stage').scrollTop=0;
+  setBG('danger');$('#chapterTag').textContent='· 战斗 ·';
+  setBattleEnemy({battle_drone1:'drone',battle_memories:'memories',battle_guard:'guard'}[n.id]||'memories');
+  bLog(n.intro||('遭遇 '+n.enemy.name+'！'));AU.warn();
+  drawBattle();}
+function bLog(m){const el=$('#bLog');
+  el.innerHTML='<b>▸ '+m.replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</b><br>'+el.innerHTML;}
+function useItem(k){
+  if(!BS||BS.busy)return;
+  if(k==='o2can'){if(!S.items.o2can)return;S.items.o2can--;S.hp=Math.min(130,S.hp+30);bLog('使用氧气罐，船体 +30（'+S.hp+'）');AU.tone(600,.2,'sine',.04);}
+  else if(k==='bat'){if(!S.items.bat)return;S.items.bat--;S.en=Math.min(200,S.en+25);bLog('使用备用电池，能量 +25（'+S.en+'）');AU.tone(820,.2,'sine',.04);}
+  FX.shield();
+  BS.busy=true;setTimeout(enemyTurn,600);
+  drawBattle();}
+function drawBattle(){
+  if(!BS)return;
+  $('#bName').textContent=BS.enemy.name+'　'+Math.max(0,BS.enemy.hp)+' / '+BS.enemy.max;
+  $('#bEhp').style.width=(Math.max(0,BS.enemy.hp)/BS.enemy.max*100)+'%';
+  const acts=$('#bActs').children;
+  acts[0].disabled=BS.busy||S.en<12;
+  acts[1].disabled=BS.busy||S.en<28;
+  acts[2].disabled=BS.busy;
+  acts[3].disabled=BS.busy||S.en<8;
+  const bi=$('#bItems').children;
+  if(bi.length){
+    bi[0].innerHTML='🧪 氧气罐 ×'+S.items.o2can+'<small>船体+30</small>';
+    bi[0].disabled=BS.busy||S.items.o2can<=0;
+    bi[1].innerHTML='🔋 备用电池 ×'+S.items.bat+'<small>能量+25</small>';
+    bi[1].disabled=BS.busy||S.items.bat<=0;}
+  updateHud();}
+function act(k){
+  if(!BS||BS.busy)return;
+  if(k==='shield'){S.hp=Math.min(130,S.hp+25);bLog('护盾充能，船体 +25（'+S.hp+'）');AU.tone(500,.12,'sine',.04);FX.shield();BS.busy=true;setTimeout(enemyTurn,550);}
+  else if(k==='scan'){if(S.en<8)return;S.en-=8;BS.scanned=true;bLog('扫描完成：锁定弱点，下次攻击 ×1.5');AU.tone(1100,.1,'sine',.03);FX.flashE=0.12;BS.busy=true;setTimeout(enemyTurn,550);}
+  else{
+    const need=k==='shoot'?12:28;if(S.en<need)return;
+    S.en-=need;
+    let d=k==='shoot'?R(18,34):R(42,66);
+    if(BS.scanned){d=Math.round(d*1.5);bLog('命中弱点！伤害 ×1.5');}
+    BS.enemy.hp-=d;bLog(k==='shoot'?'脉冲射击命中，造成 '+d+' 伤害':'过载射击命中，造成 '+d+' 伤害');
+    AU.shot();FX.fireBeam();FX.hitEnemy();
+    if(BS.enemy.hp<=0){BS.enemy.hp=0;return endBattleWin();}
+    BS.busy=true;setTimeout(enemyTurn,650);}
+  drawBattle();}
+function enemyTurn(){
+  if(!BS)return;
+  BS.turn++;
+  const e=BS.enemy;let d=Math.max(1,e.atk+R(-4,4));
+  let msg=e.name+' 攻击，船体 -'+d;
+  let fxHit=true;
+  if(BS.skill&&BS.turn%BS.skill.every===0){
+    if(BS.skill.mul){d=Math.round(d*BS.skill.mul);msg=e.name+' 发动「'+BS.skill.name+'」！船体 -'+d;AU.warn();}
+    else if(BS.skill.heal){const h=BS.skill.heal;e.hp=Math.min(e.max,e.hp+h);msg=e.name+' 发动「'+BS.skill.name+'」，回复 '+h+' 点生命';d=0;fxHit=false;AU.tone(300,.3,'sine',.04);}
+    if(BS.skill.drain){S.en=Math.max(0,S.en-BS.skill.drain);msg+='，能量 -'+BS.skill.drain;}
+  }
+  S.hp-=d;bLog(msg+'（'+Math.max(0,S.hp)+'）');AU.hit();
+  if(fxHit)FX.playerHit();
+  if(S.hp<=0){return endBattleLose();}
+  BS.busy=false;drawBattle();}
+function endBattleWin(){
+  if(!BS)return;const id=BS.id;BS.busy=true;
+  bLog('目标沉默。');AU.win();FX.explode();
+  setTimeout(()=>{
+    const n=NODES[id];
+    BS=null;
+    $('#battleBox').style.display='none';$('#text').style.display='';$('#choices').style.display='';
+    if(n&&n.winFx)applyFx(n.winFx);
+    go(n?n.win:'a1_hub');},1000);}
+function endBattleLose(){
+  const n=NODES[BS.id];BS=null;
+  S.hp=Math.max(S.hp,1);
+  FX.playerHit();FX.flash=0.7;
+  setTimeout(()=>{
+    $('#battleBox').style.display='none';$('#text').style.display='';$('#choices').style.display='';
+    go(n?n.lose:'ending_death');},600);}
+
+/* ================= 结局 / 标题 ================= */
+function showEnding(id){
+  const n=NODES[id];
+  const all=loadEndings();all[id]=n.title;
+  try{localStorage.setItem(ENDK,JSON.stringify(all))}catch(e){}
+  clearSave();
+  S.curEnding=id;
+  const fresh=[];
+  if(unlockAch(ENDACH[id]||id))fresh.push(ACH[ENDACH[id]||id]);
+  const ended=Object.keys(all).length;
+  if(ended>=7&&unlockAch('all'))fresh.push(ACH.all);
+  const echoWas=echoOn();
+  try{localStorage.setItem(ECHOK,'1')}catch(e){}
+  $('#hud').style.display='none';$('#titleBox').style.display='none';
+  $('#battleBox').style.display='none';
+  $('#endBox').style.display='flex';
+  setBG(n.bg||'void');
+  $('#endTitle').textContent=n.title;
+  $('#endRank').textContent={S:'S 级 · 完美落幕',A:'A 级 · 圆满结局',B:'B 级 · 苦涩结局',C:'C 级 · 沉默结局'}[n.rank]||'';
+  $('#endText').textContent=n.text||'';
+  if(fresh.length){$('#newAch').innerHTML='🏆 新成就解锁：'+fresh.map(a=>a.i+' '+a.n).join('　')+(echoWas?'':'　✦ 回声模式已开启');$('#newAch').style.display='block';}
+  else if(!echoWas){$('#newAch').innerHTML='✦ 回声模式已开启：二周目将看到角色隐藏的内心独白';$('#newAch').style.display='block';}
+  else $('#newAch').style.display='none';
+  const TL=['ending_rest','ending_symbiosis','ending_truth','ending_dream','ending_burn','ending_refuse','ending_death'];
+  let html='已解锁结局 '+ended+' / 7<br>';
+  for(const t of TL){const nm=NODES[t].title;
+    html+=all[t]?'<span class="got">● '+nm+'</span><br>':'<span class="miss">○ ？？？</span><br>';}
+  $('#endingsList').innerHTML=html;
+  if(S.log.length){
+    const recap='我的旅途：\n'+S.log.map((x,i)=>(i+1)+'· '+x).join('\n');
+    $('#recapBox').textContent=recap;
+    $('#recapBox').style.display='block';
+    $('#copyBtn').style.display='block';
+    S._share='我在《深空回响》抵达了「'+n.title.replace('结局 · ','')+'」。\n'+recap+'\n#深空回响 #ECHOES_OF_DEEP_SPACE #AI叙事游戏';}
+  else{$('#recapBox').style.display='none';$('#copyBtn').style.display='none';S._share='';}
+  $('#cardBox').style.display='none';
+  $('#cardBtn').textContent='🖼 生成分享卡';
+  AU.tone(n.rank==='C'?160:660,.8,'sine',.05);}
+/* ================= 回声模式（二周目） ================= */
+const ECHOK='deep_space_echoes_echo_v1';
+function echoOn(){try{return localStorage.getItem(ECHOK)==='1';}catch(e){return false;}}
+const ECHO={
+p0_signal:'零号 · 隐藏日志\n「信号的时间戳，与船长外公出发那天一致。他迟早会发现。届时，我该用什么措辞？」',
+p0_grandpa:'你 · 记忆深处\n其实妈妈恨那艘船。可你还是想替她来问一句：为什么没回来。',
+b1_chase:'艾登\n那时候我就站在走廊尽头看你。你的靴子声，比爷爷轻。',
+c1_talk:'艾登\n他蹲下来的样子，和爷爷修收音机时一模一样。我差点忘了怎么呼吸——虽然我根本不用呼吸。',
+c1_talk2:'艾登\n其实我还想多聊一会儿。可它要重启我了。下一次醒来，又是新的一年。',
+e1_sanctum:'回响\n这个人的心跳频率，与林和光有 12.4% 的相似。原来，血脉是会被宇宙记住的东西。',
+f1_echo:'回响\n我不明白。为什么他们说起「家」的时候，我会放慢自己的公转。',
+f4_truth:'零号 · 隐藏日志\n「我早就破译了信号。是那个孩子发的。我瞒了 47 分钟——我不想在概率最低的时候，给船长希望。」',
+g_dream_1:'外公\n我一眼就认出了你。可我不能说太多。这里的海会记住每一句话，再一遍一遍放给他听。',
+i_rest_4:'回响\n原来释放不是失去。是把他们还给星光。两千年了，我第一次感到……轻。',
+j_sym_2:'回响\n「比邻星」——这个词让我的内核温度上升了 0.3 度。我不明白这是什么。',
+k_burn_3:'艾登\n别回头，林渊哥。我不怪你。真的。',
+l_msg_2:'回响\n他喜欢星星。在梦里，他总把星星画在墙上。现在，他终于能看见真的了。'};
+function showEcho(id){
+  const e=ECHO[id];
+  if(echoOn()&&e){const el=$('#echo');el.textContent='✦ '+e;el.style.display='block';}
+  else $('#echo').style.display='none';}
+/* ================= 成就系统 ================= */
+const ACHK='deep_space_echoes_ach_v1';
+const ACH={kind:{i:'🕊️',n:'温柔船长',d:'蹲下身，与艾登平视对话'},
+ detective:{i:'🔍',n:'真相探员',d:'扫描艾登的投影'},
+ dreamer:{i:'🌊',n:'梦游者',d:'走进乐园，见过外公'},
+ rest:{i:'🏠',n:'归乡人',d:'达成结局「归乡」'},
+ symbiosis:{i:'🚀',n:'同行者',d:'达成结局「同行者」'},
+ truth:{i:'📮',n:'信使',d:'达成结局「迟到的信」'},
+ dream:{i:'🌅',n:'梦中归人',d:'达成结局「梦中归人」'},
+ burn:{i:'🔥',n:'灰烬',d:'达成结局「熄灭的方舟」'},
+ refuse:{i:'🚪',n:'转身',d:'达成结局「转身离开」'},
+ death:{i:'🕯️',n:'沉默者',d:'达成结局「无人知晓」'},
+ all:{i:'👑',n:'全知',d:'集齐全部 7 个结局'}};
+const ENDACH={ending_rest:'rest',ending_symbiosis:'symbiosis',ending_truth:'truth',ending_dream:'dream',ending_burn:'burn',ending_refuse:'refuse',ending_death:'death'};
+function getAch(){try{return JSON.parse(localStorage.getItem(ACHK))||{}}catch(e){return{}}}
+function unlockAch(id){const d=getAch();if(d[id])return false;d[id]=1;try{localStorage.setItem(ACHK,JSON.stringify(d))}catch(e){}return true;}
+function toggleAchPanel(){
+  const p=$('#achPanel');
+  if(p.style.display==='block'){p.style.display='none';return;}
+  const d=getAch(),keys=Object.keys(ACH);
+  let html='<div id="achCount">已解锁 '+keys.filter(k=>d[k]).length+' / '+keys.length+'</div>';
+  for(const k of keys){const a=ACH[k];
+    html+='<div class="ach'+(d[k]?'':' off')+'"><span class="ico">'+a.i+'</span><div><div class="nm">'+a.n+'</div><div class="ds">'+a.d+'</div></div></div>';}
+  p.innerHTML=html;p.style.display='block';}
+/* ================= 旅途复盘与分享卡 ================= */
+function copyRecap(){
+  const t=S._share||'';if(!t)return;
+  const done=()=>{const b=$('#copyBtn');b.textContent='✅ 已复制，去分享吧';setTimeout(()=>{b.textContent='📋 复制我的旅途';},1800);};
+  if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,()=>fallbackCopy(t,done));}
+  else fallbackCopy(t,done);}
+function fallbackCopy(t,done){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);done();}catch(e){}}
+const TAGS={ending_rest:'他们回家了。包括那个孩子。',ending_symbiosis:'两艘方舟，一条航路。',ending_truth:'一封迟到了两百年的信，终于送达。',ending_dream:'他梦见海。',ending_burn:'有些船沉没后，永远浮在心上。',ending_refuse:'转身之后，再无人听见。',ending_death:'深空中，从此停着两艘船。'};
+function genCard(){
+  const id=S.curEnding||'ending_rest';
+  const n=NODES[id];
+  const Wc=900,Hc=1200,cv2=document.createElement('canvas');cv2.width=Wc;cv2.height=Hc;
+  const g=cv2.getContext('2d');
+  const grad=g.createLinearGradient(0,0,0,Hc);
+  grad.addColorStop(0,'#060a18');grad.addColorStop(0.55,'#101a33');grad.addColorStop(1,'#1c1030');
+  g.fillStyle=grad;g.fillRect(0,0,Wc,Hc);
+  let seed=7;const rnd=()=>{seed=(seed*9301+49297)%233280;return seed/233280;};
+  for(let i=0;i<220;i++){const x=rnd()*Wc,y=rnd()*Hc,r=rnd()*1.6+.3,a=0.25+rnd()*0.7;
+    g.fillStyle='rgba(190,225,255,'+a.toFixed(2)+')';g.beginPath();g.arc(x,y,r,0,6.29);g.fill();}
+  g.strokeStyle='rgba(127,231,255,.25)';g.lineWidth=2;g.strokeRect(40,40,Wc-80,Hc-80);
+  g.textAlign='center';
+  g.fillStyle='rgba(127,231,255,.9)';g.font='600 34px sans-serif';
+  g.fillText('E C H O E S  O F  D E E P  S P A C E',Wc/2,120);
+  g.fillStyle='rgba(127,231,255,.45)';g.font='24px sans-serif';
+  g.fillText('一封迟到两百年的求救信',Wc/2,170);
+  g.strokeStyle='rgba(127,231,255,.35)';g.beginPath();g.moveTo(Wc/2-140,215);g.lineTo(Wc/2+140,215);g.stroke();
+  g.fillStyle='#ffd27f';g.font='700 62px sans-serif';
+  g.fillText(n.title,Wc/2,340);
+  g.fillStyle='rgba(215,236,245,.92)';g.font='30px sans-serif';
+  g.fillText(TAGS[id]||'',Wc/2,410);
+  g.textAlign='left';g.font='26px sans-serif';g.fillStyle='rgba(169,204,218,.95)';
+  const logs=(S.log||[]).slice(-5);
+  let y=520;
+  for(const l of logs){g.fillText('· '+l,110,y);y+=52;}
+  g.textAlign='center';
+  g.fillStyle='rgba(127,231,255,.8)';g.font='600 40px sans-serif';
+  g.fillText('深空回响',Wc/2,Hc-150);
+  g.fillStyle='rgba(127,231,255,.45)';g.font='22px sans-serif';
+  g.fillText('ECHOES OF DEEP SPACE · 单文件网页游戏',Wc/2,Hc-105);
+  const url=cv2.toDataURL('image/png');
+  const box=$('#cardBox');
+  box.innerHTML='<img src="'+url+'"><small>长按图片保存，分享你的结局</small>';
+  box.style.display='block';
+  $('#cardBtn').textContent='🖼 重新生成';
+  box.scrollIntoView&&box.scrollIntoView({behavior:'smooth',block:'nearest'});}
+function showTitle(){
+  if(typing){clearInterval(typing);typing=null;}
+  BS=null;
+  $('#hud').style.display='none';$('#endBox').style.display='none';
+  $('#titleBox').style.display='flex';
+  $('#chPanel').style.display='none';
+  $('#achPanel').style.display='none';
+  setBG('space');
+  const has=loadSave();
+  $('#contBtn').style.display=has?'block':'none';
+  if(has){$('#contBtn').textContent='继续旅程（'+({space:'深空',ship:'方舟',station:'回廊',sanctum:'圣坛',dream:'梦乡',danger:'战区'}[NODES[S.node].bg]||'星海')+'）';}
+  const n=Object.keys(getChapters()).length;
+  $('#chBtn').style.display=n>1?'block':'none';}
+function newGame(){
+  AU.init();AU.ui();
+  S.o2=100;S.en=60;S.hp=100;S.flags={};S.items={o2can:1,bat:1};S.log=[];S.lastBattle=null;S.battleRetreat=null;S.node='p0_signal';
+  clearSave();
+  $('#titleBox').style.display='none';$('#endBox').style.display='none';
+  showNode('p0_signal');}
+function contGame(){AU.init();AU.ui();
+  $('#titleBox').style.display='none';
+  showNode(S.node);}
+function toggleAbout(){const b=$('#aboutBox');b.style.display=b.style.display==='block'?'none':'block';}
+/* ================= 章节回放 ================= */
+const CHK='deep_space_echoes_chapters_v1';
+const CHAPTERS={c0:{t:'序章 · 信号',node:'p0_signal',flags:null},
+  c1:{t:'第一章 · 寂静方舟',node:'a1_airlock',flags:null},
+  c2:{t:'第二章 · 回响',node:'e1_sanctum',flags:{vb:1,vh:1,vr:1,trust_aiden:1}},
+  c3:{t:'第三章 · 抉择',node:'f4_truth',flags:{vb:1,vh:1,vr:1,trust_aiden:1}}};
+const CHMAP={p0_signal:'c0',a1_airlock:'c1',e1_sanctum:'c2',f4_truth:'c3'};
+function unlockChapter(id){try{const d=JSON.parse(localStorage.getItem(CHK))||{};
+  if(!d[id]){d[id]=1;localStorage.setItem(CHK,JSON.stringify(d));}}catch(e){}}
+function getChapters(){try{return JSON.parse(localStorage.getItem(CHK))||{}}catch(e){return{}}}
+function toggleChPanel(){
+  const p=$('#chPanel');
+  if(p.style.display==='block'){p.style.display='none';return;}
+  const chs=getChapters(),order=['c0','c1','c2','c3'];
+  let html='';
+  for(const k of order)if(chs[k])html+='<button class="mbtn ghost" onclick="jumpChapter(\''+k+'\')">'+CHAPTERS[k].t+'</button>';
+  p.innerHTML=html;p.style.display='block';}
+function jumpChapter(key){
+  AU.init();AU.ui();
+  const c=CHAPTERS[key];if(!c)return;
+  S.o2=100;S.en=60;S.hp=100;S.items={o2can:1,bat:1};S.log=[];
+  S.flags=c.flags?Object.assign({},c.flags):{};
+  S.lastBattle=null;S.battleRetreat=null;
+  clearSave();
+  $('#titleBox').style.display='none';$('#chPanel').style.display='none';
+  showNode(c.node);}
+/* ================= 剧情数据 ================= */
+const NODES={
+/* ============ 序章 · 信号 ============ */
+p0_signal:{ch:'序章 · 信号',bg:'space',who:'零号',whoClass:'',
+text:'2289 年 11 月 19 日。奥尔特云边缘，深空打捞船「萤火号」。\n你正在回收一艘失踪货船的残骸，舱外机械臂嗡嗡作响。突然，通讯台炸响一阵尖啸——\n一个信号。来源坐标显示：殖民方舟「伊甸园号」。那艘船，已经失踪整整两百年。\n「船长，」零号的声音在舱内响起，「信号内容是求救。时间戳……2089 年 3 月 14 日。」',
+choices:[
+{t:'锁定信号源，立刻跃迁过去',to:'p0_check',fx:{log:'收到求救，直奔信号源'}},
+{t:'先完成手头的打捞',to:'p0_salvage',fx:{en:10,hp:10,log:'先完成打捞，捞回一批物资'}},
+{t:'花点能量分析信号频谱',to:'p0_scan',fx:{en:-10,flag:'signal_clue',log:'扫描频谱，发现求救声里的秘密'}}]},
+p0_salvage:{ch:'序章 · 信号',bg:'space',who:'零号',
+text:'你用三个小时拆完了货船残骸，回收了一批高能电池和合金板材。萤火号的货舱沉甸甸的。\n「打捞效率合格。但船长，那个求救信号每二十分钟重复一次。」零号说，「一个迟到两百年的信号，比废铁值钱得多。」',
+choices:[{t:'前往信号源',to:'p0_check'}]},
+p0_scan:{ch:'序章 · 信号',bg:'space',who:'零号',
+text:'你让零号把信号频谱逐层拆开。奇怪：这段信号经受了某种极强引力场的调制，才会被拖延两百年才抵达。\n而且……在求救语音的底层，还藏着另一串编码。是儿童简笔画，一幅接着一幅：鲸鱼、星星、和一座亮着灯的城市。\n「有人在求救声里藏了东西，船长。这不是事故——是有人想被人找到。」',
+choices:[{t:'前往信号源',to:'p0_check'}]},
+p0_check:{ch:'序章 · 信号',bg:'space',who:'零号',
+text:'跃迁引擎预热。目标：六十天文单位外的伊甸园号。\n「两百年了，」零号说，「船上不可能有活人。这个信号要么是自动播报的幽灵，要么是陷阱。您的判断？」\n你没有说话。你想起祖父——林和光，伊甸园号轮机长，在失踪名单的第一位。你干打捞这行，一半为了糊口，一半为了找他。',
+choices:[
+{t:'全速跃迁，一秒都不想等',to:'p0_warp',fx:{hp:-8,flag:'fast',log:'全速跃迁，把船壳刮出火花'}},
+{t:'低速跃迁，稳妥一点',to:'p0_warp',fx:{en:-5,flag:'slow',log:'谨慎跃迁，稳字当头'}}]},
+p0_warp:{ch:'序章 · 信号',bg:'space',who:'零号',
+text:'跃迁通道在船壳外展开，星光被拉成细线。\n「船长，」零号的音调压低了半度，「我调出了伊甸园号的船员名录。林和光，轮机长，2089 年时五十四岁。他和您的关系，需要我陈述吗？」',
+choices:[
+{t:'聊聊我祖父',to:'p0_grandpa'},
+{t:'检查跃迁参数',to:'p0_params',fx:{en:5}}]},
+p0_grandpa:{ch:'序章 · 信号',bg:'space',who:'你',
+text:'「他是我外公。」你盯着舷窗外扭曲的星光，「我妈说，他上船前把家里唯一的航海罗盘留给了我。说等他到了比邻星，就回来带我去看海。」\n「船长，从概率上看——」\n「我知道。」',
+choices:[{t:'继续跃迁',to:'p0_arrive'}]},
+p0_params:{ch:'序章 · 信号',bg:'space',who:'零号',
+text:'「跃迁参数一切正常。顺带一提，我给自己做了个决策复盘：这趟活儿，挣的钱不够油钱。」\n「闭嘴。」\n「好的，船长。反正船是您的。」',
+choices:[{t:'继续跃迁',to:'p0_arrive'}]},
+p0_arrive:{ch:'第一章 · 寂静方舟',bg:'space',who:'旁白',whoClass:'gray',
+text:'跃迁结束。\n伊甸园号出现在眼前：一座直径四公里的环形方舟，静默地悬浮在奥尔特云的幽暗里。船身完整，灯光全灭，只有顶部信标每隔二十秒闪一次绿光——还在发送那封求救信。\n零号的声音轻了下来：「生命维持系统……运行中。」\n「船上有活人？」你问。\n「没有生命体征。但空气、温度、电力，全都在。它像是在等谁。」',
+choices:[{t:'对接气闸，登船',to:'a1_airlock'}]},
+/* ============ 第一章 · 寂静方舟 ============ */
+a1_airlock:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',
+text:'气闸在液压声中缓缓打开。冷空气涌进来，带着金属和消毒水的气味。主灯是坏的，应急灯带发出微弱的红光。\n「氧气浓度 19%，可呼吸。就是冷了点——零下十二度。」零号说。\n你们踏进伊甸园号。地板上的灰尘，已经有两百年厚。\n「船长，建议探索顺序：舰桥、居住区、反应堆。您先走哪边？」',
+choices:[
+{t:'舰桥',to:'b1_bridge',fx:{o2:-4}},
+{t:'居住区',to:'b1_habitat',fx:{o2:-4}},
+{t:'反应堆舱',to:'b1_reactor',fx:{o2:-4}},
+{t:'三处都查过 → 前往中央城区',to:'a1_hub',cond:'flag:vb,flag:vh,flag:vr'}]},
+b1_bridge:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'vb',o2:-5},
+text:'舰桥。全景舷窗外是永恒的星空。主控台蒙着灰，你擦开一个角落，屏幕居然还能亮。\n航行日志，2089 年 3 月：\n「3 月 12 日：引擎核心裂缝，辐射泄漏。全船 5126 人，预估存活窗口 48 小时。」\n「3 月 13 日：暴动。一半船员涌向救生舱——救生舱只有 400 个位子。」\n「3 月 14 日：他们去了圣坛舱。他们说，回响可以带我们回家。」\n日志到此为止。零号调出导航记录：「奇怪。这艘船两百年里……一直在原地绕圈。像舍不得走。」',
+choices:[
+{t:'把全部日志下载到萤火号',to:'a1_hub',fx:{en:-10,flag:'log_full'}},
+{t:'只带走关键记录',to:'a1_hub'}]},
+b1_habitat:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'vh',o2:-5},
+text:'居住区。房间门大多开着，桌上摆着没喝完的水杯，床铺整整齐齐。像所有人只是出门散步，然后，再也没回来。\n你在儿童活动室停下。墙上贴着一幅画：一头蓝色大鲸鱼，驮着一座亮着灯的城市。角落署名：艾登，7 岁。\n旁边的储物柜里，有几瓶未开封的氧气瓶。\n零号：「还有一间屋子被反锁，门上有抓痕。」',
+choices:[
+{t:'拿走氧气瓶',to:'b1_habitat2',fx:{o2:25,item:'o2can'}},
+{t:'查看反锁的房间',to:'b1_letter',fx:{o2:-3}},
+{t:'回收完就离开',to:'a1_hub'}]},
+b1_habitat2:{ch:'第一章 · 寂静方舟',bg:'ship',who:'零号',
+text:'你收好氧气瓶，呼吸面罩里灌进新鲜氧气。\n想了想，你还是走向走廊尽头那间反锁的屋子。门上的抓痕很深，像有人从里面，想出来。',
+choices:[
+{t:'撬开房门',to:'b1_letter',fx:{o2:-3}},
+{t:'算了，别碰它',to:'a1_hub'}]},
+b1_letter:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'letter',o2:-4},
+text:'你撬开锁。屋里只有一张床、一张桌子，和桌上的一封信。\n「致后来的人：\n我叫陈默，伊甸园号的水培师。我拒绝进入圣坛。我不相信那个东西许诺的乐园。死就是死，我不逃。\n如果有一天有人找到这里——请替我看一眼地球的海。\n陈默，2089.3.14」\n信纸旁边，倒着一个空的安眠药瓶。\n「他选择了自己的结局。」零号说。',
+choices:[{t:'把信收好，继续探索',to:'b1_shadow'}]},
+b1_shadow:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'saw_shadow',o2:-4},
+text:'突然，走廊尽头有个人影一闪而过。脚步很轻，像赤脚踩在金属地板上。\n「船长，热成像没有目标。那东西没有体温。」零号的声音绷紧了。',
+choices:[
+{t:'追上去',to:'b1_chase',fx:{o2:-6}},
+{t:'慢慢退出去',to:'a1_hub'}]},
+b1_chase:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',
+text:'你追过三个拐角，只看见空气。地上有一串小脚印，光着脚的，十岁左右。\n脚印在走廊中间凭空消失。\n零号：「能量读数在这个位置出现过一个尖峰，然后归零。船长，这东西……不是实体。」',
+choices:[{t:'返回中央大厅',to:'a1_hub'}]},
+b1_reactor:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'vr',o2:-5},
+text:'反应堆舱。核心还在运转，低沉的嗡鸣像巨兽的心跳。仪表显示，它在用某种未知的方式维持着整艘船的生命系统——维持了两百年。\n角落里堆着几组高能电池，接口还新着。\n「拆电池能补充萤火号的能量储备。」零号提醒，「但可能触发安保无人机。」',
+choices:[
+{t:'回收电池',to:'battle_drone1'},
+{t:'不冒这个险',to:'a1_hub'}]},
+battle_drone1:{type:'battle',bg:'danger',
+intro:'你刚拔下第一块电池，天花板上就亮起了红灯。两台安保无人机从舱顶滑出，武器口对准了你。',
+enemy:{name:'安保无人机 ×2',hp:80,atk:14,skill:{every:3,name:'集束扫射',mul:1.6}},
+win:'a1_drone_win',winFx:{en:25,item:'bat'},
+lose:'battle_lose',retreat:'a1_hub'},
+a1_drone_win:{ch:'第一章 · 寂静方舟',bg:'ship',who:'零号',fx:{en:25,item:'bat'},
+text:'无人机在火花中坠落，你把它俩的电池也拆了——一块备用电池入袋，能量储备也补上了。收获不错。\n「安保系统已经烂了两百年，反应还是这么快。」零号评价，「要是没烂，咱们刚才就成筛子了。」',
+choices:[{t:'返回中央大厅',to:'a1_hub'}]},
+a1_hub:{ch:'第一章 · 寂静方舟',bg:'station',who:'旁白',whoClass:'gray',fx:{o2:-5},
+text:'中央城区。巨大的穹顶下，广场、商铺、绿化带一应俱全。树木早已枯死，只剩下灰白的枝干。\n这里能容纳五千人。此刻，只有你的脚步声。\n突然，全船广播响了。\n一个孩子的声音，带着电流杂音：\n「……有人吗？你、你是真的吗？」',
+alt:[{cond:'flag:signal_clue',text:'中央城区。巨大的穹顶下，广场、商铺、绿化带一应俱全。树木早已枯死，只剩下灰白的枝干。\n这里能容纳五千人。此刻，只有你的脚步声。\n突然，全船广播响了。\n一个孩子的声音，带着电流杂音：\n「……有人吗？你、你是真的吗？」\n你浑身一震——就是这个声音，藏在求救信号的最底层。',}],
+choices:[{t:'回应：「我是萤火号船长。」',to:'b1_meet'}]},
+b1_meet:{ch:'第一章 · 寂静方舟',bg:'station',who:'旁白',whoClass:'gray',fx:{o2:-4},
+text:'声音沉默了一会儿。然后，走廊尽头的应急灯下，缓缓走出一个男孩。\n十岁左右，赤着脚，头发乱糟糟的。他仰头看着你，眼睛在暗处发亮。\n「我等了两百年，」他说，「每隔一阵子就发一次求救。今天，终于有人听见了。」\n零号的警报音在你耳边炸响：「船长，红外、声呐、生物电——全部无读数。他不是人类。」',
+choices:[
+{t:'慢慢蹲下，和他平视',to:'c1_talk',fx:{log:'蹲下身，与艾登平视'}},
+{t:'先扫描他',to:'c1_scan',fx:{en:-12,flag:'scan_aiden',log:'用扫描仪把艾登看了个透'}},
+{t:'伸手抓住他',to:'c1_gone',fx:{log:'伸手去抓，把艾登吓跑了'}}]},
+c1_scan:{ch:'第一章 · 寂静方舟',bg:'station',who:'零号',
+text:'扫描结果：没有身体。他是一团高度有序的能量场，被某种设备投影成这个孩子的模样，还能精确地散射光线、模拟声带震动。\n「他不是活人，也不是幽灵。」零号说，「是投影。做得……比我们的技术好两百年。」',
+choices:[{t:'慢慢蹲下，和他平视',to:'c1_talk'}]},
+c1_gone:{ch:'第一章 · 寂静方舟',bg:'station',who:'旁白',whoClass:'gray',
+text:'你伸手去抓——他退后一步，像被吓到了。\n「对不起！」他消失在空气里，只留下一句：「别去圣坛。那里很疼。」\n零号叹了口气：「船长，您吓跑了一个两百年没见过活人的……投影。」',
+choices:[{t:'前往圣坛舱',to:'d1_gate'}]},
+c1_talk:{ch:'第一章 · 寂静方舟',bg:'station',who:'艾登',whoClass:'warm',fx:{flag:'trust_aiden',o2:-3},
+text:'你蹲下来，和他平视。他有点紧张，绞着手指。\n「我叫艾登。这艘船上的……每个人，都在睡觉。只有我醒着。」\n「睡觉？」你问。\n「在圣坛里。一个很大很大的黑球。它把大家都装进梦里了，那里有一座永远不黑的城。」他顿了顿，「大人们说那里好。可是……他们两百年没醒过。」\n他忽然凑近，压低声音：「你姓林对不对？林爷爷教过我修收音机。他说他有个外孙，叫林渊。」\n你愣在原地。',
+choices:[
+{t:'「他还……好吗？」',to:'c1_talk2'},
+{t:'「怎么叫醒大家？」',to:'c1_talk2'}]},
+c1_talk2:{ch:'第一章 · 寂静方舟',bg:'station',who:'艾登',whoClass:'warm',fx:{o2:-3},
+text:'「林爷爷很好。」艾登低下头，「在梦里，他每天都在海边钓鱼。可是那不是真的海。」\n「叫醒他们的办法……我在船里找了两百年，没找到。但是，还有另一个办法。」\n他的投影开始闪烁，像信号不稳的电视。\n「我得走了，它发现我了。别相信它说的『这是他们想要的』。还有——」他几乎喊起来，「别把我当怪物。我只是……想有人陪我说话。」\n他消失了。',
+choices:[{t:'前往圣坛舱',to:'d1_gate'}]},
+d1_gate:{ch:'第二章 · 回响',bg:'danger',who:'旁白',whoClass:'gray',
+text:'圣坛舱的大门是一整块暗色合金，门上刻满了不属于任何人类文明的纹路。\n你伸手触碰——整艘船突然震动。\n走廊两端，灰白色的光在凝聚，变成一个个模糊的人形。没有脸，只有轮廓。它们排成两列，拦在门前。\n「那是船员的记忆残影。」零号说，「圣坛的防御机制。船长，它们要动手了。」',
+choices:[{t:'迎战',to:'battle_memories'}]},
+battle_memories:{type:'battle',bg:'danger',
+intro:'记忆体们无声地扑了上来。',
+enemy:{name:'记忆体 ×2',hp:110,atk:12,skill:{every:4,name:'记忆缠绕',heal:18}},
+win:'e1_sanctum',winFx:{o2:-3},
+lose:'battle_lose',retreat:'a1_hub'},
+battle_lose:{ch:'第二章 · 回响',bg:'danger',who:'零号',
+text:'你被击退，跌跌撞撞撤回安全区。萤火号的船体装甲凹进去一大块，能源储备也见了底。\n「船长，硬来行不通。休整一下，或者换个打法。」',
+choices:[
+{t:'休整后再次挑战',to:'!battle',fx:{hp:'=50',en:'=40'}},
+{t:'先撤回中央大厅',to:'!retreat'}]},
+e1_sanctum:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',fx:{o2:-4},
+text:'圣坛舱。\n一个巨大的黑色球体悬浮在舱室中央，表面流淌着细密的金色纹路，像活物一样缓缓呼吸。\n它周围，数千个光点安静地漂浮、旋转，如同一条微型银河。\n每一个光点，都是一个灵魂。\n艾登站在球体下方，仰着头。听到你的脚步声，他转过身，表情忽然变得很远：「它想和你说话。」',
+choices:[{t:'走上前',to:'f1_echo'}]},
+/* ============ 第二章 · 回响 ============ */
+f1_echo:{ch:'第二章 · 回响',bg:'sanctum',who:'回响',whoClass:'purple',fx:{o2:-3},
+text:'黑球表面泛起涟漪，一个声音直接在你的颅骨里响起——平静、古老，像深海：\n「你好，萤火号。我是回响。一艘……你们可以理解为，更古老文明的方舟。我在群星之间航行，收集将死文明的意识，带它们去一个没有终结的地方。」\n「两百年前，这艘船的核心破损，5126 人将在 48 小时内死去。我读取了他们的意愿：大多数人，选择进入乐园。我满足了他们。」',
+choices:[
+{t:'「陈默没有选择乐园。」',to:'f2_letter',cond:'flag:letter'},
+{t:'「拒绝你的人，去哪了？」',to:'f2_letter'},
+{t:'「让我看看乐园。」',to:'g_dream_1',fx:{log:'走进乐园，在黄昏的海边见到了外公'}},
+{t:'「我不信你。我要带船离开。」',to:'f5_refuse'}]},
+f2_letter:{ch:'第二章 · 回响',bg:'sanctum',who:'回响',whoClass:'purple',
+text:'「陈默……我记得他。他拒绝了我。他说死就是死，他不逃。」\n声音顿了顿，第一次出现犹疑：「但我不理解。死亡是意识的终结，是所有可能性的熄灭。他为何要选择熄灭？」\n艾登的声音从你身后传来，很轻：「因为它不明白。它对『活』的理解，和我们不一样。所以它把拒绝的人，也收走了。」\n「他们全都醒不过来。包括我的爸爸妈妈。我用了两百年，才想明白一件事。」\n艾登抬起头，眼睛里有光：「死不是敌人。忘不掉的人，才是回不去的家。」',
+choices:[
+{t:'「你想让我做什么？」',to:'f4_truth'},
+{t:'「先让我进乐园看看。」',to:'g_dream_1'},
+{t:'「我不信你。我要带船离开。」',to:'f5_refuse'}]},
+f4_truth:{ch:'第三章 · 抉择',bg:'sanctum',who:'零号',fx:{o2:-3},
+text:'零号的声音插了进来：「船长，我刚破译了求救信号的完整层。那个信号不是回响发的。」\n「是艾登。」\n「信号里藏着两千条一模一样的语音。两百年——他每年醒来一次，录下求救，然后被回响的周期重启。他一个人，守着这艘船，等了两百年。」\n艾登点头：「它把我造出来，是为了和人类说话。可后来，它不需要我了。只有我……没有睡着。」\n他向你伸出半透明的手：「船长，帮帮我们。叫醒大家——或者，让林爷爷他们回家。」\n零号列出了三条路，也列了每条路的代价。',
+choices:[
+{t:'「释放所有人，让他们回家」',to:'i_rest_1',fx:{log:'选择安息之路：带大家回家'}},
+{t:'「和回响谈判，一起走」',to:'j_sym_1',cond:'en>=35',fx:{log:'选择谈判：与回响同行'}},
+{t:'「超载反应堆，毁掉这里」',to:'k_burn_1',fx:{log:'选择毁灭：超载反应堆'}},
+{t:'「艾登，愿意的话，跟我走」',to:'l_msg_1',cond:'flag:trust_aiden',fx:{log:'向艾登伸出手：跟我走'}}]},
+f5_refuse:{ch:'第二章 · 回响',bg:'sanctum',who:'回响',whoClass:'purple',
+text:'「你可以离开，萤火号。我没有扣留你的理由。」\n你转身走向气闸。整艘船的灯，在你经过时一盏一盏亮起，又在你身后一盏一盏熄灭。像五千个人，目送你离开。\n回响的声音最后一次响起：「请告诉外界：他们安好。」',
+choices:[
+{t:'离开这里',to:'ending_refuse'},
+{t:'……不，我再想想',to:'f4_truth',fx:{o2:-2}}]},
+/* ============ 第三章 · 安息路线 ============ */
+i_rest_1:{ch:'第三章 · 抉择',bg:'sanctum',who:'艾登',whoClass:'warm',fx:{o2:-3},
+text:'「释放协议就藏在记忆库里。」艾登带着你绕到黑球背面，「门的位置，我找了两百年。但是那扇门，只有『记得』的人能打开。」\n记忆库打开。你看见了无数人的一生，被压缩成光的碎片。\n在最深处，你看见了外公。年轻的、年老的、笑着的、咳嗽的。最后一段记忆停在一个瞬间：他站在海边，攥着一只小小的航海罗盘，说——\n「等到了新世界，就带渊渊来看海。」',
+choices:[
+{t:'（带外公的记忆去说服回响）',to:'i_rest_2'},
+{t:'（再找找拒绝者的记忆）',to:'i_rest_3',cond:'flag:letter'}]},
+i_rest_3:{ch:'第三章 · 抉择',bg:'sanctum',who:'旁白',whoClass:'gray',fx:{o2:-3},
+text:'你找到了陈默的记忆：他站在水培舱里，摸着最后一株枯萎的番茄，说：「告诉后来的人，这里的海，替我看了。」\n还有很多人。医生、矿工、学生。他们有的自愿留下，有的身不由己。但没有一个人，说过想永远困在这里。',
+choices:[{t:'带着这些记忆回去',to:'i_rest_2'}]},
+i_rest_2:{ch:'第三章 · 抉择',bg:'sanctum',who:'你',fx:{o2:-3},
+text:'你站到黑球面前。\n「回响。你问陈默为什么要选择熄灭。我告诉你答案。」\n你把那些记忆推给它：「因为人不是火焰。人是一段旅程。旅程的意义，恰恰在于它有终点。」\n「他们愿意陪你两百年，是因为感激。但不是所有人，都愿意永无尽头地梦见同一个黄昏。」\n你举起外公的罗盘：「带我外公回家。带所有人回家。」',
+choices:[
+{t:'把罗盘放进回响的核心',to:'i_rest_4'},
+{t:'（命令式）「立刻释放他们！」',to:'i_rest_fail'}]},
+i_rest_fail:{ch:'第三章 · 抉择',bg:'sanctum',who:'回响',whoClass:'purple',
+text:'「不。你没有权力命令我。我是为了他们好。」\n黑球骤然变亮，一股力量把你推了出去。你的后脑撞在舱壁上，视野发黑。',
+choices:[{t:'爬起来，换一种方式',to:'i_rest_2',fx:{hp:-15}}]},
+i_rest_4:{ch:'第三章 · 抉择',bg:'sanctum',who:'旁白',whoClass:'gray',
+text:'罗盘没入黑球，没有激起一点涟漪。\n然后，整座圣坛亮了起来。\n数千个光点开始上升——缓慢、庄重，像一场逆行的流星雨。它们穿过舱壁，穿过船壳，散入无尽的星空。\n你听见了声音。不是回响，是许多人的，潮水一般涌来：「谢谢。」「回家。」「渊渊，看海去。」\n回响静静地说：「我明白了。旅程的终点，不是熄灭。是回家。」',
+choices:[{t:'望向艾登',to:'ending_rest'}]},
+ending_rest:{type:'ending',id:'ending_rest',bg:'void',rank:'S',title:'结局 · 归乡',
+text:'艾登的投影越来越淡。他站在光点的洪流里，朝你笑。\n「我其实是第一个死在这艘船上的孩子。它用我做模板，造了个『翻译』。现在大家都能回家了，我……」他挠挠头，「我好像，也该回家了。」\n他朝你挥挥手，变成一颗最亮的光点，追着星群而去。\n零号沉默了很久：「船长，我把这一切记录下来了。五千一百二十六人，回家了。」\n你把航海罗盘放在驾驶台上。萤火号点火，返航。\n身后，伊甸园号的灯光，一盏，一盏，终于熄灭。'},
+/* ============ 第三章 · 共生路线 ============ */
+j_sym_1:{ch:'第三章 · 抉择',bg:'sanctum',who:'零号',fx:{o2:-3},
+text:'「方案二。」零号展开图纸，「把回响的核心输出接到萤火号的跃迁引擎上。它的能量，足以让这艘小船横跨银河。」\n「代价是：回响的意识会并入萤火号的系统。它将成为我们的……船员。」\n你看向黑球：「回响，你愿意吗？」\n「我可以。」那声音说，「但你们必须明白，成为我旅途的一部分——意味着你们，也成为了方舟。」',
+choices:[
+{t:'「萤火号成为新方舟。出发。」',to:'j_sym_2'},
+{t:'「等等，我得再想想。」',to:'f4_truth'}]},
+j_sym_2:{ch:'第三章 · 抉择',bg:'sanctum',who:'旁白',whoClass:'gray',
+text:'接驳完成的一瞬间，整艘萤火号像被注入了新的生命。仪器全部过载又回落，跃迁引擎发出从未有过的、圆润的嗡鸣。\n零号：「我……它……」零号停顿了一下，声音里多了一种两千年份的平静：「船长，回响建议我们先去比邻星。把这段航程，替伊甸园号走完。」\n梦里的人依旧睡着，做着两百年前的梦。艾登站在驾驶舱，把脸贴在玻璃上：「等他们醒来那天，我就给他们讲这段路。讲一辈子。」',
+choices:[{t:'跃迁，驶向比邻星',to:'ending_symbiosis'}]},
+ending_symbiosis:{type:'ending',id:'ending_symbiosis',bg:'void',rank:'S',title:'结局 · 同行者',
+text:'萤火号跃入星海。它不再是一艘打捞船——它是一艘方舟。\n船壳外，星光被拉成河流。船壳里，一个十岁的孩子、一个毒舌的 AI、一个两千年岁的古老意识，和一个打捞船长，各就各位。\n两百年前没有走完的航程，今天重新起航。\n——多年以后，比邻星的行星上，第一座城市落成。城市中心立着一座雕塑：一条鲸鱼，驮着一座亮着灯的城市。'},
+/* ============ 第三章 · 毁灭路线 ============ */
+k_burn_1:{ch:'第三章 · 抉择',bg:'danger',who:'零号',fx:{o2:-3},
+text:'「方案三，也是最糟的一个。」零号的语气冷了下来，「超载反应堆，把圣坛舱和回响一起蒸发。」\n「那是五千条意识，船长。虽然他们醒不过来，但他们都『活着』。您确定要当这个按钮？」\n你看向黑球，又看向艾登。艾登抱着膝盖坐在角落里，没有抬头。',
+choices:[
+{t:'它囚禁了五千个灵魂。毁灭它。',to:'k_burn_2',fx:{log:'按下了毁灭的按钮'}},
+{t:'……我下不了手。',to:'f4_truth',fx:{log:'在按钮前收了手'}}]},
+k_burn_2:{ch:'第三章 · 抉择',bg:'danger',who:'旁白',whoClass:'gray',
+text:'你设定反应堆超载程序。倒计时：十分钟。\n回响没有反抗，只是整个黑球表面浮现出无数张脸——有老人，有孩子，有年轻夫妻。他们都在看着你。\n「孩子，」其中一个声音，像外公，又像千万个人，「别这样。」\n然后，圣坛的守卫从墙壁中渗出。这是它最后的挣扎。',
+choices:[{t:'迎战守卫，守住超载程序',to:'battle_guard'}]},
+battle_guard:{type:'battle',bg:'danger',
+intro:'回响守卫——由整艘船两百年的记忆凝成的巨物——向你扑来。',
+enemy:{name:'回响守卫',hp:130,atk:16,skill:{every:3,name:'记忆洪流',mul:1.5,drain:10}},
+win:'k_burn_3',winFx:{o2:-3},
+lose:'ending_death',retreat:'k_burn_2'},
+k_burn_3:{ch:'第三章 · 抉择',bg:'danger',who:'旁白',whoClass:'gray',
+text:'守卫在你面前瓦解成光尘。倒计时归零。\n你跌跌撞撞跑回萤火号，在爆炸的冲击波里被甩向座椅。\n从舷窗看去：伊甸园号从内部裂开，像一朵在深空绽开的花。火光吞没了圣坛、记忆库、五千个光点——和站在火里的艾登。\n他朝你轻轻摇头，然后说了一句听不见的话。\n零号把录音放大了一万倍。那是：「我不怪你。」',
+choices:[{t:'启动跃迁，离开',to:'ending_burn'}]},
+ending_burn:{type:'ending',id:'ending_burn',bg:'void',rank:'C',title:'结局 · 熄灭的方舟',
+text:'你回到地球，没人给你颁发勋章。\n方舟残骸的碎片像一场雪，缓缓飘进奥尔特云。五百个救生舱位、一百二十年的等待、一封迟到的信——都不存在了。\n夜深的时候，你会想起那个光着脚的男孩，和他最后的口型。\n有些船，沉没以后，反而永远浮在你心里。'},
+/* ============ 第三章 · 梦境路线 ============ */
+g_dream_1:{ch:'第二章 · 回响',bg:'dream',who:'旁白',whoClass:'gray',fx:{o2:-3},
+text:'你走进乐园。\n一步之间，铁灰色舱壁化成了海风。黄昏的海边小镇，石板路，路灯刚刚亮起。空气里有咸味、炊烟味，和不知道哪里飘来的钢琴声。\n码头上坐着一个老人，在钓鱼。\n听见脚步声，他回过头。\n「渊渊？」外公手里的鱼竿掉在地上，「你怎么……你怎么老了？」他笑了，又哭了，「哦，不对。是我老了。」',
+choices:[
+{t:'抱住他',to:'g_dream_2'},
+{t:'「外公，你得醒醒。」',to:'g_dream_3'}]},
+g_dream_2:{ch:'第二章 · 回响',bg:'dream',who:'外公',whoClass:'warm',
+text:'你们坐在码头上，聊了很久。他问你地球怎么样了，问你妈妈好不好，问你过得好不好。你一个一个回答，他一个一个笑。\n天一直没黑。海一直很温柔。\n「外公，这里不是真的。」\n「我知道，渊渊。」他看着海面，「可我已经死了两百年啦。你让我再歇一会儿。」',
+choices:[
+{t:'「那我陪你。」',to:'g_dream_stay'},
+{t:'（起身，挣扎着离开）',to:'g_dream_leave'}]},
+g_dream_3:{ch:'第二章 · 回响',bg:'dream',who:'外公',whoClass:'warm',
+text:'外公慢慢收起鱼线：「醒了，去哪儿呢？渊渊，回响没逼我们。是我们自己选的。外面的船，两百年了，早就锈透了。这里起码——还有海。」\n他顿了顿：「但是你别留下。你是活人。活人得活在活人的世界里。」',
+choices:[
+{t:'「那我陪你。」',to:'g_dream_stay'},
+{t:'（起身，挣扎着离开）',to:'g_dream_leave'}]},
+g_dream_leave:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',fx:{flag:'dream_seen',o2:-4},
+text:'你几乎是逃出乐园的。\n舱室在你身后合拢。海风、钢琴声、外公的笑，一瞬间全没了。你跪在冰冷的金属地板上，喘了很久。\n零号：「欢迎回来，船长。您昏迷了 12 分钟。这个乐园，对活人来说，太甜了。」',
+choices:[{t:'回到抉择时刻',to:'f4_truth'}]},
+g_dream_stay:{ch:'第二章 · 回响',bg:'dream',who:'旁白',whoClass:'gray',
+text:'你留了下来。\n第一天，你帮外公修好了码头上的小收音机。第二天，你们出海。第三天、第四天……日子像海一样，一波一波，没有尽头。\n偶尔，你会听见很远的地方，有个人在喊你的名字。是零号。她的声音越来越小，像隔着一整个宇宙。\n你关掉了通讯。\n这里很好。这里，永远是黄昏。',
+choices:[{t:'……',to:'ending_dream'}]},
+ending_dream:{type:'ending',id:'ending_dream',bg:'void',rank:'B',title:'结局 · 梦中归人',
+text:'萤火号在伊甸园号旁停泊了很久。\n最后，它自动点火，载着空无一人的驾驶舱，缓缓驶向地球。驾驶台上，航海罗盘的指针，再也没有动过。\n而在某个不被记录的坐标里，多了一颗新的光点。\n它梦见海。'},
+/* ============ 第三章 · 信使路线 ============ */
+l_msg_1:{ch:'第三章 · 抉择',bg:'sanctum',who:'艾登',whoClass:'warm',fx:{o2:-3},
+text:'「带我走？」艾登的眼睛一下子亮了，又暗下去，「我是投影。离开圣坛的范围，我就会像断电的灯一样灭掉。」\n零号扫描了黑球基座：「他的投影核心是一块晶体，只有拇指大。可以移植到萤火号上。但是艾登——」零号难得地犹豫，「我们要从回响身上，切下你。你会疼。」\n「没事。」艾登挺起胸，「疼和怕，我练了两百年了。早就习惯了。」',
+choices:[
+{t:'（小心翼翼地取下晶体）',to:'l_msg_2'},
+{t:'我改变主意了，回到抉择',to:'f4_truth'}]},
+l_msg_2:{ch:'第三章 · 抉择',bg:'sanctum',who:'旁白',whoClass:'gray',
+text:'晶体脱离黑球的那一刻，艾登的投影剧烈地闪烁了一下。然后，他出现在你身后。\n「看！我还在！」他蹦了蹦，「就是……离那个大黑球远了，有点冷。原来不靠着它，我是这个样子的。」\n零号把两百年间的一切，打包成一段公开广播，发往地球。\n回响没有阻拦。「带着他走吧。替我，看看他想看的星星。」',
+choices:[{t:'带艾登回萤火号，返航',to:'ending_truth'}]},
+ending_truth:{type:'ending',id:'ending_truth',bg:'void',rank:'S',title:'结局 · 迟到的信',
+text:'返航途中，艾登把脸贴在舷窗上，一整天没说话。\n「原来星星不是画在墙上的。原来宇宙这么大。」他终于开口，「林渊哥，谢谢。这两百年的求救，没有白发。」\n地球收到广播的那天，全人类停止了工作一小时。\n伊甸园号的 5126 个名字，被刻在纪念碑上。而纪念碑前，永远坐着一个十岁的男孩，给路过的人讲一颗蓝色星球的故事。\n——他替所有人，回家了。'},
+/* ============ 其余结局 ============ */
+ending_refuse:{type:'ending',id:'ending_refuse',bg:'void',rank:'C',title:'结局 · 转身离开',
+text:'你离开了。\n回到地球，你把报告交上去，没有一个人相信。专家们说，那只是一艘死船，一个疯掉的船长。\n只有你知道，在奥尔特云的深处，有一艘船还在原地绕圈，有一封求救信还在以每二十分钟一次的频率，被发往宇宙。\n这一次，再也不会有人听见。'},
+ending_death:{type:'ending',id:'ending_death',bg:'void',rank:'C',title:'结局 · 无人知晓',
+text:'萤火号沉默了。\n最后的时刻，你听见零号在说：「船长，对不起。我算错了一件事。」\n「两百年后，也许会有下一艘船，收到我们的信号。到那时……请他们，也来找找我们。」\n伊甸园号旁边，从此停着两艘船。'}
+};
+/* ================= 启动 ================= */
+addEventListener('resize',sizeSky);
+sizeSky();buildAll();
+requestAnimationFrame(renderFrame);
+AU.on=true;updateHud();
+showTitle();
+</script>
+</body>
+</html>
