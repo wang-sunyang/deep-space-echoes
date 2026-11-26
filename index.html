@@ -894,19 +894,12 @@ function toggleFullscreen(){
 function onFsChange(){
   const on=isFs();
   if(AU.on)AU.tone(on?880:520,.09,'sine',.035);
-  setTimeout(function(){W2=0;sizeSky();},80);
+  setTimeout(function(){sizeSky();},80);
   refreshSettings();}
 document.addEventListener('fullscreenchange',onFsChange);
 document.addEventListener('webkitfullscreenchange',onFsChange);
-/* 画质：低配降低像素比，提升帧率 */
-let W2=0;
-const _sizeSky=sizeSky;
-sizeSky=function(){_sizeSky();if(CFG.quality==='low'&&!isFs()===false){}};
-function setQuality(q){CFG.quality=q;saveCfg();refreshSettings();applyQuality();}
-function applyQuality(){const cv=$('#sky');
-  if(CFG.quality==='low'){cv.style.imageRendering='auto';FOC_CAP=0.85;}else{FOC_CAP=1;}
-  if(!isFs())sizeSky();}
-let FOC_CAP=1;
+/* 画质：低配通过减小 FOC 缩放物体、降低渲染负担（见 renderFrame） */
+function setQuality(q){CFG.quality=q;saveCfg();refreshSettings();}
 function setSpeed(v){CFG.speed=v;saveCfg();refreshSettings();}
 function toggleShake(){CFG.shake=!CFG.shake;saveCfg();refreshSettings();}
 function toggleRumble(){CFG.rumble=!CFG.rumble;saveCfg();refreshSettings();refreshPadStatus();}
@@ -928,7 +921,7 @@ function showToast(t){
 function openSettings(){AU.init();AU.ui();refreshSettings();refreshPadStatus();$('#setBox').style.display='flex';PAD.menu=true;}
 function closeSettings(){$('#setBox').style.display='none';PAD.menu=false;}
 /* 手柄震动 */
-function rumble(strong,ms){if(!CFG.rumble||!PAD.index===null)return;
+function rumble(strong,ms){if(!CFG.rumble||PAD.index===null)return;
   try{const gp=navigator.getGamepads?navigator.getGamepads()[PAD.index]:null;
     if(gp&&gp.vibrationActuator&&gp.vibrationActuator.playEffect){
       gp.vibrationActuator.playEffect('dual-rumble',{duration:ms||90,strongMagnitude:strong||0.6,weakMagnitude:0.35});}
@@ -944,7 +937,7 @@ _st.textContent='@keyframes shakeIt{0%,100%{transform:none}15%{transform:transla
 document.head.appendChild(_st);
 
 /* ================= 键盘 / 手柄导航 ================= */
-const PAD={index:null,menu:false,last:[],sel:0,prev:0,idleT:0};
+const PAD={index:null,menu:false,last:[],sel:0,active:false};
 function focusables(){
   const box=$('#setBox');
   if(box&&box.style.display==='flex')return [...document.querySelectorAll('#setBox button')];
@@ -956,9 +949,7 @@ function focusables(){
   if(bb&&bb.style.display==='block'){const bs=[...document.querySelectorAll('#bActs button, #bItems button')];return bs.filter(b=>!b.disabled);}
   const tb=$('#titleBox');
   if(tb&&tb.style.display==='flex'){
-    const all=[...document.querySelectorAll('#titleBox button')];
-    const vis=all.filter(b=>b.style.display!=='none'&&b.style.display!=='none');
-    return vis.length?vis:all.filter(b=>b.style.display!=='none');}
+    return [...document.querySelectorAll('#titleBox button')].filter(b=>b.style.display!=='none');}
   return [...document.querySelectorAll('#choices .choice')].filter(b=>!b.disabled);}
 function navMove(dir){
   const list=focusables();if(!list.length)return;
@@ -978,10 +969,12 @@ function navBack(){
   if($('#titleBox').style.display==='flex'){return;}
   if(WALK){exitWalk();return;}
   showTitle();}
-function resetNav(){PAD.sel=0;PAD.last=[];setTimeout(()=>{const l=focusables();if(l.length)l[0].classList.add('sel');},60);}
+function resetNav(){PAD.sel=0;PAD.last=[];
+  setTimeout(()=>{if(PAD.active){const l=focusables();if(l.length)l[0].classList.add('sel');}},60);}
 /* ---- 键盘 ---- */
 addEventListener('keydown',function(e){
   const k=e.key;
+  if(k.startsWith('Arrow')||k==='Enter'||k===' '||k==='Escape')PAD.active=true;
   if(k==='f'||k==='F'){toggleFullscreen();e.preventDefault();return;}
   if(k==='m'||k==='M'){toggleSound();e.preventDefault();return;}
   if(k==='Escape'){
@@ -1009,6 +1002,7 @@ function padLoop(){
     const b=gp.buttons.map(x=>x.pressed?1:0);
     const ax=gp.axes[0]||0,ay=gp.axes[1]||0;
     const pressed=(i)=>b[i]===1&&PAD.last[i]!==1;
+    if(b.some(x=>x)||Math.abs(ax)>0.3||Math.abs(ay)>0.3)PAD.active=true;
     if(WALK){
       /* 步行：左摇杆移动、右摇杆环视 */
       if(gp.axes.length>=4){
@@ -1712,7 +1706,7 @@ choices:[{t:'返回标题',to:'!title'}]}
 };
 /* ================= 启动 ================= */
 addEventListener('resize',sizeSky);
-sizeSky();buildAll();applyQuality();
+sizeSky();buildAll();
 requestAnimationFrame(renderFrame);
 requestAnimationFrame(padLoop);
 refreshSettings();
