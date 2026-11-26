@@ -28,7 +28,7 @@ On board: 5,126 sleeping souls, a boy named Aiden who has been awake for two cen
 | 📚 **In-game Codex** | 17 lore entries unlocked as you play (timeline, factions, lens-jump physics, the Great Silence paradox…) — backed by the full [world bible](docs/CODEX.md) in the repo |
 | 📖 **Chapter replay** | Jump back into any unlocked chapter from the title screen |
 | 🎨 **Software-rendered 3D** | A from-scratch painter's-algorithm renderer on Canvas 2D — no WebGL. Low-poly ship, rotating ark, breathing sanctum, dream sea, 3D battle models with lasers & explosions |
-| 🚶 **Walkable 3D scenes** | Four first-person segments: walk the ark's main corridor and push open doors, chase a flickering shadow, march the sanctum gauntlet, and stroll the sunset pier toward your grandfather — drag to move, drag to look |
+| 🚶 **Walkable 3D scenes** | Five first-person segments: walk the ark's main corridor and push open doors, chase a flickering shadow, march the sanctum gauntlet, stroll the sunset pier toward your grandfather, and take the final walk through the dark |
 | 🎵 **Synthesized soundtrack** | Every scene has its own WebAudio-generated ambient mode (no audio files!) plus UI/battle SFX |
 | 🎮 **Gamepad & keyboard** | Full navigation with a controller (D-pad/sticks, Ⓐ confirm, Ⓑ back, Ⓧ fullscreen, Ⓨ settings) or keyboard (↑↓/Enter/Esc/F/M/1-9). Walkable scenes support dual-stick movement |
 | ⛶ **Fullscreen & settings** | One-tap fullscreen with adaptive re-layout; settings panel for text speed, graphics quality, screen shake and gamepad rumble (all persisted) |
