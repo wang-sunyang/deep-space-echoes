@@ -1,0 +1,20 @@
+{
+  "name": "深空回响 · Echoes of Deep Space",
+  "short_name": "深空回响",
+  "description": "单文件科幻互动小说：打捞船萤火号在 2289 年收到失踪两百年的殖民方舟求救信号。零依赖，离线可玩。",
+  "lang": "zh-CN",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#04060c",
+  "theme_color": "#04060c",
+  "categories": ["games", "entertainment"],
+  "icons": [
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "assets/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

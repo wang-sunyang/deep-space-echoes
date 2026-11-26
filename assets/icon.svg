@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="深空回响">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="42%" r="72%">
+      <stop offset="0%" stop-color="#0d2333"/>
+      <stop offset="60%" stop-color="#060b14"/>
+      <stop offset="100%" stop-color="#04060c"/>
+    </radialGradient>
+    <radialGradient id="core" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="35%" stop-color="#a9f4ff"/>
+      <stop offset="100%" stop-color="#3fa8c9" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g fill="none" stroke="#7fe7ff" stroke-linecap="round">
+    <circle cx="256" cy="256" r="168" stroke-width="3" opacity="0.22"/>
+    <circle cx="256" cy="256" r="132" stroke-width="2.5" opacity="0.32"/>
+    <circle cx="256" cy="256" r="96" stroke-width="2" opacity="0.45"/>
+    <circle cx="256" cy="256" r="60" stroke-width="1.6" opacity="0.6"/>
+  </g>
+  <circle cx="256" cy="256" r="62" fill="url(#core)"/>
+  <circle cx="256" cy="256" r="13" fill="#ffffff"/>
+  <g fill="#7fe7ff">
+    <circle cx="256" cy="88" r="4.5" opacity="0.9"/>
+    <circle cx="412" cy="286" r="3.2" opacity="0.7"/>
+    <circle cx="120" cy="330" r="3.8" opacity="0.8"/>
+    <circle cx="330" cy="120" r="2.6" opacity="0.55"/>
+    <circle cx="170" cy="150" r="2.2" opacity="0.5"/>
+  </g>
+  <path d="M256 168 L256 344" stroke="#7fe7ff" stroke-width="1.2" opacity="0.25"/>
+  <path d="M168 256 L344 256" stroke="#7fe7ff" stroke-width="1.2" opacity="0.25"/>
+</svg>

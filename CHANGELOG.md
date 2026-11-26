@@ -1,5 +1,24 @@
 # Changelog
 
+## v2.0 — 2026-11-26 — Second chapter, offline install, accessibility
+
+**内容扩展**
+- 新增支线遭遇战「圣坛侧舱」：`e1_annex` 分支（扫描 −8 EN / 撬门 −8 HP / 退回），解锁隐藏舱室与 200 具遗体
+- 新增第四场战斗「守墓体」：95 HP / 13 ATK，每 3 回合「墓土覆盖」（伤害 ×1.4 + 吸能 6）
+- 新增结局分支与词条：`cx_caretaker`（守墓体）、成就 `gravedigger`（守墓人）、回声独白 `e1_annex_win`
+- **两条可选结局分支**：`ending_keeper`「守墓人」（在支线侧舱选择留下，替两百具遗体守灯）、`ending_seed`「播种者」（持外公的罗盘在圣坛重写回响的核心）—— 结局数 7 → 9，成就 14 → 16
+- 统计口径：73 节点（60 剧情）、9 结局、4 战斗、16 成就、17 词条、14 回声独白、100 个选项
+
+**体验打磨**
+- **PWA / 离线安装**：新增 `manifest.webmanifest`、`sw.js`（导航 network-first、静态资源 cache-first）、`assets/icon.svg` + 192/512 PNG，可添加到主屏幕并断网开玩
+- **无障碍**：`prefers-reduced-motion` 全局降级动画、`prefers-contrast: more` 提高对比、按钮最小 44px 触控热区、键盘导航时显示 focus ring、回声区与提示条加 `aria-live` 播报、3D canvas 标记 `aria-hidden`
+- **存档 v2**：新增 `SAVE_V=2` 与 `migrateSave()`，v1 老档（数组式 items、缺失 stats 字段）自动迁移并清理旧键，越界资源值钳制
+
+**工程**
+- 回归测试扩至 **63 项**：新增存档 v1→v2 迁移、越界钳制、service worker 语法与预缓存清单、manifest 链接、PWA 注册等检查
+- 新增 `ci/smoke.yml`（GitHub Actions，20 秒跑完）与 `docs/CI.md` 启用说明 —— 因 token 缺 `workflow` 权限，需在网页手动落一次
+- `PUBLISH.md` 重写为可直接复制的中英文发布文案（V2EX / Reddit / HN / itch.io）
+
 ## v1.9 — 2026-11-26 — Balance pass & regression harness
 - **结局可达性修复**：第三章「谈判」需要 `en>=35`，但任何一条极限路线的能量上限只有 31，该结局实际锁死 → 门槛调至 25
 - **最终战平衡**：「回响守卫」130 HP / 16 ATK / 每 3 回合吸能 10，在最优路线下也会弹尽必败 → 105 HP / 14 ATK / 每 4 回合吸能 6

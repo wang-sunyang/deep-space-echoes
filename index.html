@@ -3,6 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#04060c">
+<meta name="description" content="《深空回响》——单文件科幻互动小说。2289 年，打捞船萤火号收到失踪两百年的殖民方舟求救信号。零依赖，离线可玩。">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="深空回响">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" type="image/svg+xml" href="assets/icon.svg">
+<link rel="apple-touch-icon" href="assets/icon-192.png">
 <title>深空回响 · ECHOES OF DEEP SPACE</title>
 <style>
 :root{--cyan:#7fe7ff;--cyan2:#3fa8c9;--dim:#33506b;--warn:#ff6b6b;--gold:#ffd27f;--txt:#d7ecf5;}
@@ -136,10 +144,25 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 #whTip{font-size:11.5px;color:#9cc3d4;letter-spacing:1px;margin-top:6px;opacity:.85;}
 #whMsg{margin-top:8px;font-size:12.5px;color:var(--warn);letter-spacing:1px;animation:blink 1s infinite;}
 @media (min-width:640px){#text{font-size:18px;}#gameTitle{font-size:52px;}}
+
+/* ================= 无障碍与触控 ================= */
+html.reduced-motion *{animation:none!important;transition:none!important;}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms!important;transition-duration:.001ms!important;}
+}
+.choice,.btn,#bActs button,#bItems button{min-height:44px;}          /* 移动端最小触控热区 */
+.keyboard-nav .choice:focus-visible,.keyboard-nav button:focus-visible{
+  outline:2px solid var(--cyan);outline-offset:2px;}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+  clip:rect(0,0,0,0);white-space:nowrap;border:0;}
+@media (prefers-contrast: more){
+  :root{--txt:#ffffff;--dim:#7ea3bd;}
+  .choice{border-color:rgba(127,231,255,.55);}
+}
 </style>
 </head>
 <body>
-<canvas id="sky"></canvas>
+<canvas id="sky" aria-hidden="true"></canvas>
 <div id="walkHud" style="display:none">
   <div class="whTop"><span id="whName"></span><button class="hbtn" id="whExit" onclick="exitWalk()">✕ 退出</button></div>
   <div id="whTip"></div>
@@ -165,7 +188,7 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
   <div id="stage">
     <div id="speaker"></div>
     <div id="text"></div>
-    <div id="echo" style="display:none"></div>
+    <div id="echo" style="display:none" role="status" aria-live="polite"></div>
     <div id="choices"></div>
     <div id="battleBox">
       <div id="bEnemy"><div class="nm" id="bName"></div><div class="bhp"><div class="fill" id="bEhp"></div></div></div>
@@ -203,7 +226,7 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
       <b>O₂（氧气）</b>：探索消耗，归零即死亡；<br>
       <b>EN（能量）</b>：驱动武器与扫描；<br>
       <b>HP（船体）</b>：战斗中代表你的生命。<br><br>
-      三条资源、三场战斗、七个结局。选择会真的改变故事的走向。点击正文可加速打字。进度自动保存。
+      三条资源、四场战斗、九个结局。选择会真的改变故事的走向。点击正文可加速打字。进度自动保存。
     </div>
     <div id="totalStats"></div>
   </div>
@@ -283,7 +306,7 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 /* ================= 基础 ================= */
 const $=s=>document.querySelector(s);
 const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
-const SAVEK='deep_space_echoes_save_v1', ENDK='deep_space_echoes_endings_v1', BESTK='deep_space_echoes_best_v1', TOTK='deep_space_echoes_total_v1';
+const SAVEK='deep_space_echoes_save_v2', LEGACY_SAVEK='deep_space_echoes_save_v1', SAVE_V=2, ENDK='deep_space_echoes_endings_v1', BESTK='deep_space_echoes_best_v1', TOTK='deep_space_echoes_total_v1';
 const S={node:'',o2:100,en:60,hp:100,flags:{},items:{o2can:1,bat:1},log:[],stats:{t0:Date.now(),nodes:0,battles:0,items:0},lastBattle:null,battleRetreat:null,winFx:null,curEnding:null};
 
 /* ================= 音频 ================= */
@@ -835,10 +858,35 @@ function renderFrame(t){
   requestAnimationFrame(renderFrame);}
 
 /* ================= 存档 ================= */
-function save(){try{localStorage.setItem(SAVEK,JSON.stringify(S))}catch(e){}}
-function loadSave(){try{const s=localStorage.getItem(SAVEK);if(!s)return false;
-  const o=JSON.parse(s);if(!o.node||!NODES[o.node])return false;
-  S.node=o.node;S.o2=o.o2;S.en=o.en;S.hp=o.hp;S.flags=o.flags||{};S.items=o.items||{o2can:1,bat:1};S.log=o.log||[];S.stats=o.stats||{t0:Date.now(),nodes:0,battles:0,items:0};S.lastBattle=o.lastBattle||null;S.battleRetreat=o.battleRetreat||null;return true;}catch(e){return false}}
+function save(){try{S.v=SAVE_V;localStorage.setItem(SAVEK,JSON.stringify(S))}catch(e){}}
+/* 存档版本迁移：v1 -> v2
+   v1: items 早期为数组、stats 缺 walk/echoes、无 v 字段
+   v2: items 统一为 {key:count}、stats 补全、显式 v，并换用新键名避免覆盖旧档 */
+function migrateSave(o){
+  const st=Object.assign({t0:Date.now(),nodes:0,battles:0,items:0,walk:0,echoes:0},o.stats||{});
+  let items=o.items||{o2can:1,bat:1};
+  if(Array.isArray(items)){const m={};items.forEach(k=>{if(typeof k==='string')m[k]=(m[k]||0)+1;});items=m;}
+  const cl=(v,d)=>Math.max(0,Math.min(999,typeof v==='number'&&isFinite(v)?v:d));
+  return {v:SAVE_V,node:o.node,
+    o2:cl(o.o2,100),en:cl(o.en,60),hp:cl(o.hp,100),
+    flags:(o.flags&&typeof o.flags==='object')?o.flags:{},
+    items,log:Array.isArray(o.log)?o.log:[],
+    stats:st,lastBattle:o.lastBattle||null,battleRetreat:o.battleRetreat||null,
+    winFx:o.winFx||null,curEnding:o.curEnding||null};
+}
+function loadSave(){try{
+  let raw=localStorage.getItem(SAVEK), fromV1=false;
+  if(!raw){raw=localStorage.getItem(LEGACY_SAVEK);fromV1=!!raw;}
+  if(!raw)return false;
+  const o=JSON.parse(raw);
+  if(!o||!o.node||!NODES[o.node])return false;
+  const m=migrateSave(o);
+  S.node=m.node;S.o2=m.o2;S.en=m.en;S.hp=m.hp;S.flags=m.flags;S.items=m.items;S.log=m.log;
+  S.stats=m.stats;S.lastBattle=m.lastBattle;S.battleRetreat=m.battleRetreat;
+  S.winFx=m.winFx;S.curEnding=m.curEnding;S.v=SAVE_V;
+  if(fromV1){save();try{localStorage.removeItem(LEGACY_SAVEK)}catch(e){}}   // 迁移后归档，旧键不再保留
+  return true;
+}catch(e){return false}}
 function clearSave(){try{localStorage.removeItem(SAVEK)}catch(e){}}
 function loadEndings(){try{return JSON.parse(localStorage.getItem(ENDK))||{}}catch(e){return{}}}
 
@@ -915,7 +963,7 @@ function refreshSettings(){
   const fb=$('#fsBtn');if(fb)fb.textContent=isFs()?'⛉':'⛶';}
 function showToast(t){
   let el=$('#toast');
-  if(!el){el=document.createElement('div');el.id='toast';el.className='toast';document.body.appendChild(el);}
+  if(!el){el=document.createElement('div');el.id='toast';el.className='toast';el.setAttribute('role','status');el.setAttribute('aria-live','polite');document.body.appendChild(el);}
   el.textContent=t;el.classList.add('show');
   clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600);}
 function openSettings(){AU.init();AU.ui();refreshSettings();refreshPadStatus();$('#setBox').style.display='flex';PAD.menu=true;}
@@ -951,6 +999,8 @@ function focusables(){
   if(tb&&tb.style.display==='flex'){
     return [...document.querySelectorAll('#titleBox button')].filter(b=>b.style.display!=='none');}
   return [...document.querySelectorAll('#choices .choice')].filter(b=>!b.disabled);}
+document.addEventListener('keydown',()=>document.documentElement.classList.add('keyboard-nav'),{passive:true});
+document.addEventListener('touchstart',()=>document.documentElement.classList.remove('keyboard-nav'),{passive:true});
 function navMove(dir){
   const list=focusables();if(!list.length)return;
   list.forEach(b=>b.classList.remove('sel'));
@@ -1189,7 +1239,7 @@ function showEnding(id){
   const fresh=[];
   if(unlockAch(ENDACH[id]||id))fresh.push(ACH[ENDACH[id]||id]);
   const ended=Object.keys(all).length;
-  if(ended>=7&&unlockAch('all'))fresh.push(ACH.all);
+  if(ended>=Object.keys(ENDACH).length&&unlockAch('all'))fresh.push(ACH.all);
   const echoWas=echoOn();
   try{localStorage.setItem(ECHOK,'1')}catch(e){}
   $('#hud').style.display='none';$('#titleBox').style.display='none';
@@ -1202,8 +1252,8 @@ function showEnding(id){
   if(fresh.length){$('#newAch').innerHTML='🏆 新成就解锁：'+fresh.map(a=>a.i+' '+a.n).join('　')+(echoWas?'':'　✦ 回声模式已开启');$('#newAch').style.display='block';}
   else if(!echoWas){$('#newAch').innerHTML='✦ 回声模式已开启：二周目将看到角色隐藏的内心独白';$('#newAch').style.display='block';}
   else $('#newAch').style.display='none';
-  const TL=['ending_rest','ending_symbiosis','ending_truth','ending_dream','ending_burn','ending_refuse','ending_death'];
-  let html='已解锁结局 '+ended+' / 7<br>';
+  const TL=['ending_rest','ending_symbiosis','ending_truth','ending_dream','ending_burn','ending_refuse','ending_keeper','ending_seed','ending_death'];
+  let html='已解锁结局 '+ended+' / '+TL.length+'<br>';
   for(const t of TL){const nm=NODES[t].title;
     html+=all[t]?'<span class="got">● '+nm+'</span><br>':'<span class="miss">○ ？？？</span><br>';}
   $('#endingsList').innerHTML=html;
@@ -1251,6 +1301,7 @@ g_dream_1:'外公\n我一眼就认出了你。可我不能说太多。这里的�
 i_rest_4:'回响\n原来释放不是失去。是把他们还给星光。两千年了，我第一次感到……轻。',
 j_sym_2:'回响\n「比邻星」——这个词让我的内核温度上升了 0.3 度。我不明白这是什么。',
 k_burn_3:'艾登\n别回头，林渊哥。我不怪你。真的。',
+e1_annex_win:'回响\n两百年，我数过每一个人的呼吸。可我从没学会，怎么替他们把毯子掖好。',
 l_msg_2:'回响\n他喜欢星星。在梦里，他总把星星画在墙上。现在，他终于能看见真的了。'};
 function showEcho(id){
   const e=ECHO[id];
@@ -1267,11 +1318,13 @@ const ACH={kind:{i:'🕊️',n:'温柔船长',d:'蹲下身，与艾登平视对�
  dream:{i:'🌅',n:'梦中归人',d:'达成结局「梦中归人」'},
  burn:{i:'🔥',n:'灰烬',d:'达成结局「熄灭的方舟」'},
  refuse:{i:'🚪',n:'转身',d:'达成结局「转身离开」'},
- death:{i:'🕯️',n:'沉默者',d:'达成结局「无人知晓」'},
+ gravedigger:{i:'🪦',n:'守墓人',d:'在圣坛侧舱面对守墓体与两百具遗体'},
+ keeper:{i:'🕯',n:'留下',d:'达成结局「守墓人」'},
+ seed:{i:'🌱',n:'播种',d:'达成结局「播种者」'},death:{i:'🕯️',n:'沉默者',d:'达成结局「无人知晓」'},
  firststar:{i:'⭐',n:'最初的星星',d:'既破解了求救信号，又对艾登温柔以待'},
  whisper:{i:'🌌',n:'群星的低语',d:'在标题画面听见回响的低语（隐藏章节）'},
- all:{i:'👑',n:'全知',d:'集齐全部 7 个结局'}};
-const ENDACH={ending_rest:'rest',ending_symbiosis:'symbiosis',ending_truth:'truth',ending_dream:'dream',ending_burn:'burn',ending_refuse:'refuse',ending_death:'death'};
+ all:{i:'👑',n:'全知',d:'集齐全部 9 个结局'}};
+const ENDACH={ending_rest:'rest',ending_symbiosis:'symbiosis',ending_truth:'truth',ending_dream:'dream',ending_burn:'burn',ending_refuse:'refuse',ending_keeper:'keeper',ending_seed:'seed',ending_death:'death'};
 function getAch(){try{return JSON.parse(localStorage.getItem(ACHK))||{}}catch(e){return{}}}
 function unlockAch(id){const d=getAch();if(d[id])return false;d[id]=1;try{localStorage.setItem(ACHK,JSON.stringify(d))}catch(e){}return true;}
 function toggleAchPanel(){
@@ -1289,7 +1342,7 @@ function copyRecap(){
   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done,()=>fallbackCopy(t,done));}
   else fallbackCopy(t,done);}
 function fallbackCopy(t,done){try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);done();}catch(e){}}
-const TAGS={ending_rest:'他们回家了。包括那个孩子。',ending_symbiosis:'两艘方舟，一条航路。',ending_truth:'一封迟到了两百年的信，终于送达。',ending_dream:'他梦见海。',ending_burn:'有些船沉没后，永远浮在心上。',ending_refuse:'转身之后，再无人听见。',ending_death:'深空中，从此停着两艘船。'};
+const TAGS={ending_rest:'他们回家了。包括那个孩子。',ending_symbiosis:'两艘方舟，一条航路。',ending_truth:'一封迟到了两百年的信，终于送达。',ending_dream:'他梦见海。',ending_burn:'有些船沉没后，永远浮在心上。',ending_keeper:'两个人守着两百个人。',ending_seed:'这一次，有人回答了。',ending_refuse:'转身之后，再无人听见。',ending_death:'深空中，从此停着两艘船。'};
 function genCard(){
   const id=S.curEnding||'ending_rest';
   const n=NODES[id];
@@ -1406,6 +1459,8 @@ cx_farshore:{t:'彼岸',u:['f1_echo'],body:
 '彼岸：方舟航行的目的地，意识最终的归宿。\n它是什么？一颗星球？一段数据？一种状态？没有人知道。\n回响对它的描述只有一句，被记录在零号的日志里：\n「到了那里，他们就不再做梦了。」\n零号在句末标注：「这句话的含义，我目前有两种解释。我不喜欢其中任何一种。」'},
 cx_silence:{t:'大寂静悖论',u:['f4_truth'],body:
 '大寂静悖论：如果宇宙中曾经遍布文明，为什么我们什么都听不见？\n联邦天文台给出了一个离群的假说：因为所有文明，都在熄灭之前被「摆渡」走了。\n文明不是灭绝了。是离开了。\n反对者嘲讽这是「用童话解释寂静」。\n直到 2289 年，萤火号在奥尔特云边缘，收到了第一封来自摆渡者乘客的信。'},
+cx_caretaker:{t:'守墓体',u:['e1_annex_win'],body:
+'守墓体：回响为「拒绝乐园者」制造的收殓机械，非战斗型号，被改造后兼具守卫职能。\n2089 年事故后的 61 小时内，它把 218 具遗体从各自的舱室搬到圣坛侧舱，裹上毯子，摆成头朝舷窗的姿势——那是地球上「睡去」的方向。\n它的日志里只有一条重复了 213 万次的记录：「已整理。已整理。已整理。」\n回响不理解死亡，所以它造了一台机器，替自己继续不理解下去。'},
 cx_dream:{t:'乐园',u:['g_dream_1'],body:
 '乐园：方舟为意识构建的共振梦境，由所有沉睡者共同维持——每一个梦，都是别人梦境的土壤。\n在乐园里，时间永远是黄昏，永远是海边小镇的黄昏。\n被收录的 5126 人中，绝大多数在最后 48 小时里自愿进入。他们的共同记忆构成了乐园的纹理：石板路、炊烟、钢琴声。\n但乐园有一道裂缝：外公的海，会记住每一句说过的话。然后一遍一遍，放给来客听。'}};
 function getCodex(){try{return JSON.parse(localStorage.getItem(CODEXX))||{}}catch(e){return{}}}
@@ -1564,6 +1619,30 @@ intro:'记忆体们无声地扑了上来。',
 enemy:{name:'记忆体 ×2',hp:110,atk:12,skill:{every:4,name:'记忆缠绕',heal:18}},
 win:'e1_sanctum',winFx:{o2:-3},
 lose:'battle_lose',retreat:'a1_hub'},
+e1_annex:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',fx:{o2:-2},
+text:'圣坛舱侧壁有一道半开的检修门，比其他门矮一半，边缘被什么东西反复摩擦得发亮。\n门后传来很慢的金属摩擦声——不像机器运转，更像有人在一遍一遍擦地板。\n零号压低声音：「船长，里面有东西在动。不在船员名单上。」',
+choices:[
+{t:'先扫描门后（-8 EN）',to:'e1_annex_scan',fx:{en:-8}},
+{t:'直接撬开检修门（-8 HP）',to:'e1_annex_force',fx:{hp:-8}},
+{t:'不节外生枝，退回圣坛舱',to:'e1_sanctum'}]},
+e1_annex_scan:{ch:'第二章 · 回响',bg:'sanctum',who:'零号',
+text:'扫描波穿门而过，回传的图像让你手指僵在操作杆上。\n门后是一间不到十平米的隔间。地上整齐排着两百多具遗体，全都裹着同样的灰色船用毯，头朝同一个方向。\n一个佝偻的机械体跪在它们中间，用一块布，一具一具地擦。外壳锈穿了，动作却精确得像在完成某种仪式。\n「那是守墓体。」零号说，「回响给那些拒绝乐园的人做的收殓机。它已经擦了两百年。」\n扫描的微光惊动了它。它抬起头，两盏暗红的灯亮了。',
+choices:[{t:'举起手，慢慢后退',to:'battle_caretaker'}]},
+e1_annex_force:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',fx:{hp:-6},
+text:'你掰开检修门，锈屑簌簌落下。\n门后的空气干燥、发甜——那是防腐剂的味道。两百多具遗体整齐排着，盖着同一条灰毯。\n一个佝偻的机械体停下手中动作，缓缓站起来。关节发出旧骨头一样的响声，暗红的灯在锈壳深处亮起。\n它没有名字，也不需要名字。它只是不想再有人来打扰它守的人。',
+choices:[{t:'那就打一场',to:'battle_caretaker'},{t:'……退出去，不打扰',to:'e1_sanctum'}]},
+battle_caretaker:{type:'battle',bg:'danger',
+intro:'守墓体拖着锈穿的身体冲了过来，抹布从它手上滑落。',
+enemy:{name:'守墓体',hp:95,atk:13,skill:{every:3,name:'墓土覆盖',mul:1.4,drain:6}},
+win:'e1_annex_win',winFx:{o2:-2},
+lose:'battle_lose',retreat:'e1_sanctum'},
+e1_annex_win:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',
+fx:{ach:'gravedigger'},
+text:'守墓体倒下去时还在往那排遗体爬。\n它爬到最近的一具旁边，用仅剩的一只手把滑落的毯角重新掖好，然后灯灭了。\n隔间里安静得能听见自己的呼吸。两百多个人，两百多年，只有一台快散架的机器还记得他们怕冷。\n零号轻声说：「它身上还有一块能用的电池，船长。……拿走吗？」',
+choices:[
+{t:'取走电池，向它们鞠一躬',to:'e1_sanctum',fx:{en:20,item:'bat',log:'替守墓体守完了最后一段'}},
+{t:'什么都不动，安静退出去',to:'e1_sanctum',fx:{log:'没有打扰那些睡着的人'}},
+  {t:'（留下来，替他们守这盏灯）',to:'m_keeper_1'}]},
 battle_lose:{ch:'第二章 · 回响',bg:'danger',who:'零号',
 text:'你被击退，跌跌撞撞撤回安全区。萤火号的船体装甲凹进去一大块，能源储备也见了底。\n「船长，硬来行不通。休整一下，或者换个打法。」',
 choices:[
@@ -1571,7 +1650,7 @@ choices:[
 {t:'先撤回中央大厅',to:'!retreat'}]},
 e1_sanctum:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',fx:{o2:-4},
 text:'圣坛舱。\n一个巨大的黑色球体悬浮在舱室中央，表面流淌着细密的金色纹路，像活物一样缓缓呼吸。\n它周围，数千个光点安静地漂浮、旋转，如同一条微型银河。\n每一个光点，都是一个灵魂。\n艾登站在球体下方，仰着头。听到你的脚步声，他转过身，表情忽然变得很远：「它想和你说话。」',
-choices:[{t:'走上前',to:'f1_echo'}]},
+choices:[{t:'走上前',to:'f1_echo'},{t:'先检查侧面的检修门（支线）',to:'e1_annex'}]},
 /* ============ 第二章 · 回响 ============ */
 f1_echo:{ch:'第二章 · 回响',bg:'sanctum',who:'回响',whoClass:'purple',fx:{o2:-3},
 text:'黑球表面泛起涟漪，一个声音直接在你的颅骨里响起——平静、古老，像深海：\n「你好，萤火号。我是回响。一艘……你们可以理解为，更古老文明的方舟。我在群星之间航行，收集将死文明的意识，带它们去一个没有终结的地方。」\n「两百年前，这艘船的核心破损，5126 人将在 48 小时内死去。我读取了他们的意愿：大多数人，选择进入乐园。我满足了他们。」',
@@ -1592,7 +1671,24 @@ choices:[
 {t:'「释放所有人，让他们回家」',to:'i_rest_1',fx:{log:'选择安息之路：带大家回家'}},
 {t:'「和回响谈判，一起走」',to:'j_sym_1',cond:'en>=25',fx:{log:'选择谈判：与回响同行'}},
 {t:'「超载反应堆，毁掉这里」',to:'k_burn_1',fx:{log:'选择毁灭：超载反应堆'}},
-{t:'「艾登，愿意的话，跟我走」',to:'l_msg_1',cond:'flag:trust_aiden',fx:{log:'向艾登伸出手：跟我走'}}]},
+{t:'「艾登，愿意的话，跟我走」',to:'l_msg_1',cond:'flag:trust_aiden',fx:{log:'向艾登伸出手：跟我走'}},
+  {t:'（把外公的罗盘留在圣坛——让这艘船记得有人来过）',to:'n_seed_1',cond:'flag:letter',fx:{log:'把罗盘留在圣坛：让船记得'}}]},
+m_keeper_1:{ch:'第二章 · 回响',bg:'sanctum',who:'零号',fx:{flag:'keeper_stay',o2:-2},
+text:'「船长，您在做什么？」\n「把它扶起来。」\n「那台机器已经报废了。我们还有四小时窗口，返航燃料刚好够。」\n你把最后一块装甲板抵住它的肩，让它靠着舱壁坐直。\n「零号，你算过一件事吗——两百多年，是谁每天给他们掖被子？」\n频道里静了很久。「……没有记录。」\n「对。所以现在有了。」',
+choices:[
+{t:'关掉返航倒计时，坐下',to:'m_keeper_2'},
+{t:'算了，还是走吧',to:'e1_sanctum',fx:{log:'在侧舱门口站了很久，还是走了'}}]},
+m_keeper_2:{ch:'第二章 · 回响',bg:'void',who:'旁白',whoClass:'gray',
+text:'倒计时归零的时候，萤火号独自跃迁离开了。你没有在那艘船上。\n你坐在冰冷的金属地板上，把那盏快灭的灯摆正。\n「我叫渊。」你说，「你叫什么？」\n它想了很久。「……他们叫我守墓的。」\n「那从今天起，我陪你一起守。」',
+choices:[{t:'把毯子盖好',to:'ending_keeper'}]},
+n_seed_1:{ch:'第三章 · 抉择',bg:'sanctum',who:'回响',whoClass:'purple',
+text:'你从内袋里摸出那枚罗盘。外公的表，指针早就停了，停在某个他没能回去的黄昏。\n回响的声音低下来：「那是什么？」\n「一个人留给另一个人的东西。它不指向北方，它指向『有人等你』。」\n你把罗盘举到黑球面前：「你要不要试试，被人等一次？」',
+choices:[
+{t:'把罗盘放上去',to:'n_seed_2'},
+{t:'收回口袋，还是算了',to:'f4_truth',fx:{o2:-2}}]},
+n_seed_2:{ch:'第三章 · 抉择',bg:'sanctum',who:'旁白',whoClass:'gray',
+text:'罗盘离开你手心的那一刻，圣坛的光暗了一瞬。不是熄灭，是像人在忍住眼泪那样，短暂地闭了一下眼。\n零号：「船长……回响的核心正在重写自己。它把『永生』两个字，改成了『等到有人回答』。」\n黑球表面裂开一道缝，一颗发光的种子滚到你脚边。',
+choices:[{t:'捡起它',to:'ending_seed'}]},
 f5_refuse:{ch:'第二章 · 回响',bg:'sanctum',who:'回响',whoClass:'purple',
 text:'「你可以离开，萤火号。我没有扣留你的理由。」\n你转身走向气闸。整艘船的灯，在你经过时一盏一盏亮起，又在你身后一盏一盏熄灭。像五千个人，目送你离开。\n回响的声音最后一次响起：「请告诉外界：他们安好。」',
 choices:[
@@ -1688,6 +1784,10 @@ text:'返航途中，艾登把脸贴在舷窗上，一整天没说话。\n「原
 /* ============ 其余结局 ============ */
 ending_refuse:{type:'ending',id:'ending_refuse',bg:'void',rank:'C',title:'结局 · 转身离开',
 text:'你离开了。\n回到地球，你把报告交上去，没有一个人相信。专家们说，那只是一艘死船，一个疯掉的船长。\n只有你知道，在奥尔特云的深处，有一艘船还在原地绕圈，有一封求救信还在以每二十分钟一次的频率，被发往宇宙。\n这一次，再也不会有人听见。'},
+ending_keeper:{type:'ending',id:'ending_keeper',bg:'void',rank:'A',title:'结局 · 守墓人',
+text:'你没有回萤火号。\n你把那台机器剩下的零件一件件捡起来，用胶带、用缆线、用它自己的断臂，把它重新拼成一个勉强站得住的形状。然后你坐下来，等它的灯再次亮起。\n「你为什么……回来？」它的声音比之前更哑。\n「因为没有人应该一个人守着两百个人。」\n于是侧舱里有了两个人。一个活人，一个铁做的。你们轮流掖毯子，轮流念名字。念到第三年的时候，你已经能背下全部两百个。\n零号每二十天在频道里喊你一次。你每次都答：「还在。」\n很多年后，另一艘船收到了一段新的信号。信号里有两百个名字，还有一个活人的呼吸声。'},
+ending_seed:{type:'ending',id:'ending_seed',bg:'void',rank:'A',title:'结局 · 播种者',
+text:'你把罗盘放在黑球表面。它没有沉下去，而是停在那里，指针疯狂地转，最后定在一个谁也没见过的方向。\n「这是什么？」回响问。\n「回家的方向。不是坐标，是有人愿意带你回去的意思。」\n回响沉默了很久，久到你以为它坏了。然后它说：「我不理解。但我想理解。」\n你带走了艾登，也带走了它的一小片——一颗拳头大的、还在发光的种子。\n回到地球，你把种子种在研究院的真空罐里。它长出第一根枝条的那天，整个实验室听见了一句话，很轻，像隔着两百年：「这里是伊甸园。我们还在。请回答。」\n这一次，有人回答了。'},
 ending_death:{type:'ending',id:'ending_death',bg:'void',rank:'C',title:'结局 · 无人知晓',
 text:'萤火号沉默了。\n最后的时刻，你听见零号在说：「船长，对不起。我算错了一件事。」\n「两百年后，也许会有下一艘船，收到我们的信号。到那时……请他们，也来找找我们。」\n伊甸园号旁边，从此停着两艘船。'},
 /* ============ 隐藏章节 · 回响的低语 ============ */
@@ -1715,6 +1815,17 @@ requestAnimationFrame(padLoop);
 refreshSettings();
 AU.on=true;updateHud();
 showTitle();
+/* ================= 离线 / PWA ================= */
+if('serviceWorker' in navigator && location.protocol.startsWith('http')){
+  window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});
+}
+/* 系统级「减少动效」偏好：默认关震屏，可在设置里手动覆盖 */
+(function(){
+  try{
+    const mq=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)');
+    if(mq&&mq.matches){CFG.shake=false;saveCfg();document.documentElement.classList.add('reduced-motion');}
+  }catch(e){}
+})();
 </script>
 </body>
 </html>

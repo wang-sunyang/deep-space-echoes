@@ -1,0 +1,41 @@
+name: smoke-test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  regression:
+    name: Story graph & playthrough regression
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 零依赖：不需要 npm install，直接用系统 node 跑测试
+      - name: Run regression harness
+        run: |
+          set -o pipefail
+          node tools/smoke-test.mjs --json | tee smoke-report.json
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-report
+          path: smoke-report.json
+          if-no-files-found: ignore
+          retention-days: 14

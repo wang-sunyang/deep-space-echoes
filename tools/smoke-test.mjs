@@ -282,6 +282,39 @@ try {
 } catch (e) { fail('save / settings round-trip', e.message); }
 
 /* ------------------------------------------------------------------ */
+/* 6b. save migration v1 -> v2 */
+try {
+  if (env.localStorage.clear) env.localStorage.clear();
+  const v1 = { node: 'a1_hub', o2: 61, en: 12, hp: 88, flags: { vb: true },
+               items: ['bat', 'bat', 'o2can'], log: ['old'],
+               stats: { t0: 1700000000000, nodes: 9 } };
+  env.localStorage.setItem(G.LEGACY_SAVEK, JSON.stringify(v1));
+  const ok = G.loadSave();
+  check('v1 save migrates to v2', ok === true && G.S.node === 'a1_hub' && G.S.v === G.SAVE_V, 'v=' + G.S.v);
+  check('migrated items array -> counts', G.S.items.bat === 2 && G.S.items.o2can === 1, JSON.stringify(G.S.items));
+  check('migrated stats backfilled', G.S.stats.walk === 0 && G.S.stats.echoes === 0 && G.S.stats.nodes === 9, JSON.stringify(G.S.stats));
+  check('migration writes the v2 key', !!env.localStorage.getItem(G.SAVEK), '');
+  check('legacy key retired after migration', env.localStorage.getItem(G.LEGACY_SAVEK) === null, '');
+  if (env.localStorage.clear) env.localStorage.clear();
+  env.localStorage.setItem(G.SAVEK, JSON.stringify({ v: 2, node: 'a1_hub', o2: 9999, en: -5, hp: 100, items: null }));
+  G.loadSave();
+  check('migration clamps impossible resources', G.S.o2 === 999 && G.S.en === 0, 'o2=' + G.S.o2 + ' en=' + G.S.en);
+  G.clearSave();
+} catch (e) { fail('save migration v1 -> v2', e.message); }
+
+/* 6c. offline assets (PWA) */
+try {
+  const sw = fs.readFileSync(path.join(ROOT, 'sw.js'), 'utf8');
+  let swOk = true; try { new Function(sw); } catch (err) { swOk = false; }
+  check('service worker parses', swOk, '');
+  const pre = [...new Set([...sw.matchAll(/'(\.[^']*)'/g)].map(x => x[1]))]
+    .filter(p2 => !p2.startsWith('./assets/icon') || true);
+  const missing = pre.filter(p2 => !fs.existsSync(path.join(ROOT, p2.replace(/^\.\//, '') || 'index.html')));
+  check('service worker precache targets exist', missing.length === 0, missing.join(', '));
+  check('index.html registers the service worker', /serviceWorker\.register\('sw\.js'\)/.test(html), '');
+  check('manifest is linked from index.html', /rel="manifest"/.test(html), '');
+} catch (e) { fail('offline assets (PWA)', e.message); }
+
 /* 7. real playthroughs: drive the engine to all outcomes               */
 /* ------------------------------------------------------------------ */
 function flagsAfter(flags, fx) {

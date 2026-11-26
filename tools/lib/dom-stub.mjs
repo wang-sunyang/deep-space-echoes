@@ -263,7 +263,7 @@ export function boot(html, opts = {}) {
   showEnding, showTitle, condOk, applyFx, save, loadSave, clearSave, updateHud,
   loadEndings, saveCfg, echoOn, getAch, unlockAch, genCard,
   unlockCodex, unlockCodexDefault, getCodex, unlockChapter,
-  SAVEK, ENDK, BESTK, TOTK, SETK, ACHK, ECHOK, CODEXX, CHK,
+  SAVEK, LEGACY_SAVEK, SAVE_V, ENDK, BESTK, TOTK, SETK, ACHK, ECHOK, CODEXX, CHK,
   getBS: () => BS, getWALK: () => WALK, getEndings: () => loadEndings(),
   // image fns
 };`;

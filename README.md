@@ -4,7 +4,7 @@
 
 > 🇨🇳 [中文版 README](README.zh-CN.md)
 
-A single-file sci-fi interactive fiction that runs entirely in your browser: a hand-written software 3D renderer, a procedurally synthesized soundtrack, a 7,000-word original story, 52 story nodes, 3 turn-based battles, and **7 endings** — all packed into ~126 KB of vanilla HTML/CSS/JS. No build step. No libraries. No CDN.
+A single-file sci-fi interactive fiction that runs entirely in your browser: a hand-written software 3D renderer, a procedurally synthesized soundtrack, a 8,600-word original story, 60 story nodes, 4 turn-based battles, and **9 endings** — all packed into 138 KB of vanilla HTML/CSS/JS. No build step. No libraries. No CDN.
 
 ![social preview](assets/social-preview.png)
 
@@ -20,18 +20,19 @@ On board: 5,126 sleeping souls, a boy named Aiden who has been awake for two cen
 
 | Feature | Why it matters |
 |---|---|
-| ✦ **Echo Mode (New Game+)** | Beat any ending once and replays reveal hidden inner monologues for 13 scenes — the same story, a completely different emotional layer |
+| ✦ **Echo Mode (New Game+)** | Beat any ending once and replays reveal hidden inner monologues for 14 scenes — the same story, a completely different emotional layer |
 | 🖼 **Share cards** | Every ending generates a personalized 3:4 image card (your ending + your choices) to save and post |
 | 📋 **Captain's log** | The game silently journals your key decisions and turns them into a copy-paste recap for sharing |
-| 🏆 **13 achievements** | From "gentle captain" to "omniscient" (all 7 endings), plus rare combo & Easter-egg achievements |
+| 🏆 **16 achievements** | From "gentle captain" to "omniscient" (all 9 endings), plus rare combo & Easter-egg achievements |
 | 🥚 **Hidden Easter eggs** | Tap the title 7 times for a secret first-person chapter told by the Echo itself — and a walkable farewell corridor on the "turn away" route |
-| 📚 **In-game Codex** | 16 lore entries unlocked as you play (timeline, factions, lens-jump physics, the Great Silence paradox…) — backed by the full [world bible](docs/CODEX.md) in the repo |
+| 📚 **In-game Codex** | 17 lore entries unlocked as you play (timeline, factions, lens-jump physics, the Great Silence paradox…) — backed by the full [world bible](docs/CODEX.md) in the repo |
 | 📖 **Chapter replay** | Jump back into any unlocked chapter from the title screen |
 | 🎨 **Software-rendered 3D** | A from-scratch painter's-algorithm renderer on Canvas 2D — no WebGL. Low-poly ship, rotating ark, breathing sanctum, dream sea, 3D battle models with lasers & explosions |
 | 🚶 **Walkable 3D scenes** | Four first-person segments: walk the ark's main corridor and push open doors, chase a flickering shadow, march the sanctum gauntlet, and stroll the sunset pier toward your grandfather — drag to move, drag to look |
 | 🎵 **Synthesized soundtrack** | Every scene has its own WebAudio-generated ambient mode (no audio files!) plus UI/battle SFX |
 | 🎮 **Gamepad & keyboard** | Full navigation with a controller (D-pad/sticks, Ⓐ confirm, Ⓑ back, Ⓧ fullscreen, Ⓨ settings) or keyboard (↑↓/Enter/Esc/F/M/1-9). Walkable scenes support dual-stick movement |
 | ⛶ **Fullscreen & settings** | One-tap fullscreen with adaptive re-layout; settings panel for text speed, graphics quality, screen shake and gamepad rumble (all persisted) |
+| 📲 **Installable PWA** | Ships a manifest + service worker: add it to your home screen and play with the network off — still one static folder |
 | 📱 **Mobile-first** | Vertical layout, one-thumb play, auto-save, works offline from a single file |
 
 ## 🎮 Play
@@ -62,7 +63,7 @@ python3 -m http.server 8080
 
 ## 🧪 Regression tests
 
-A zero-dependency harness boots `index.html` inside a hand-written DOM stub (no jsdom, no npm) and checks the story graph, save round-trips, codex/chapter consistency and **plays all 7 endings end-to-end** — including the resource budget of every route.
+A zero-dependency harness boots `index.html` inside a hand-written DOM stub (no jsdom, no npm) and checks the story graph, save round-trips, codex/chapter consistency and **plays all 9 endings end-to-end** — including the resource budget of every route.
 
 ```bash
 node tools/smoke-test.mjs          # full run, exit 0 = green
@@ -91,10 +92,10 @@ See [CHANGELOG.md](CHANGELOG.md). Publishing & promotion playbook: [PUBLISH.md](
 
 《深空回响》是一款单文件科幻互动小说：公元 2289 年，打捞船「萤火号」收到失踪两百年的殖民方舟「伊甸园号」的求救信号。船上没有活人，却有 5126 个沉睡的灵魂、一个守候两百年不肯睡去的男孩艾登，和一个不理解「死亡」为何物的古老意识「回响」。
 
-- 零依赖单文件（约 127 KB），离线可玩，手机竖屏优化
+- 零依赖单文件（约 138 KB），离线可玩，手机竖屏优化
 - 手写软件 3D 渲染（无 WebGL）、WebAudio 实时合成配乐
-- 52 个剧情节点、3 场回合制战斗（敌人有专属技能）、7 个结局
-- 二周目「回声模式」解锁角色隐藏独白；结局生成可分享的旅途复盘与分享卡；13 个成就；章节回放
+- 60 个剧情节点、4 场回合制战斗（敌人有专属技能）、9 个结局
+- 二周目「回声模式」解锁角色隐藏独白；结局生成可分享的旅途复盘与分享卡；16 个成就；章节回放
 </details>
 
 ---
