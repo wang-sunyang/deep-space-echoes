@@ -16,6 +16,13 @@
 - Battle consumables (oxygen tank, spare battery) with pickups
 - Chapter replay with auto-unlock
 
+## v1.7 — 2026-11-26 — Journey stats & speedrun records
+- Per-run stats on the ending screen: play time, nodes traversed, battles fought, items used
+- Personal speedrun records per ending (stored locally), with "first arrival" and "new record" callouts
+- Title screen now shows total voyages and cumulative play time
+- Chinese README (README.zh-CN.md) + bilingual link in the English README
+- First public release pushed to GitHub with Pages enabled
+
 ## v1.6 — 2026-11-26 — World bible & in-game Codex
 - Full world bible in [docs/CODEX.md](docs/CODEX.md): 2079–2289 timeline, four factions, lens-jump physics ("three iron laws"), consciousness science, the Great Silence paradox, the Forefleet/Ark/Far Shore cosmology, terminology, and 7 future-story hooks
 - In-game Codex: 16 lore entries unlocked as the story progresses (default entries + node-triggered unlocks), readable from the title screen

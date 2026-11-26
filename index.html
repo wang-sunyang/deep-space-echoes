@@ -106,6 +106,10 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 #cxCount{font-size:12px;color:#8fb4c6;letter-spacing:2px;margin-bottom:8px;}
 #cxTitle{font-size:19px;letter-spacing:4px;color:var(--cyan);text-shadow:0 0 12px rgba(127,231,255,.5);margin-bottom:12px;}
 #cxBody{text-align:left;font-size:14px;line-height:1.95;color:var(--txt);white-space:pre-wrap;background:rgba(8,16,26,.72);border:1px solid rgba(127,231,255,.2);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
+#statsBox{margin:8px 0;text-align:left;font-size:12.5px;line-height:1.9;color:#a9ccda;background:rgba(8,16,26,.72);border:1px solid rgba(127,231,255,.2);border-radius:12px;padding:12px 14px;}
+#statsBox b{color:var(--cyan);font-weight:600;}
+#statsBox .rec{color:var(--gold);}
+#totalStats{margin-top:16px;font-size:11.5px;color:#7fa8b8;letter-spacing:2px;}
 #walkHud{position:fixed;left:0;right:0;top:0;z-index:3;max-width:720px;margin:0 auto;padding:10px 16px calc(env(safe-area-inset-top) + 8px);background:linear-gradient(180deg,rgba(2,4,9,.88),rgba(2,4,9,0));pointer-events:none;}
 #walkHud .whTop{display:flex;justify-content:space-between;align-items:center;pointer-events:auto;}
 #whName{font-size:14px;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 10px rgba(127,231,255,.5);}
@@ -179,6 +183,7 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
       <b>HP（船体）</b>：战斗中代表你的生命。<br><br>
       三条资源、三场战斗、七个结局。选择会真的改变故事的走向。点击正文可加速打字。进度自动保存。
     </div>
+    <div id="totalStats"></div>
   </div>
 </div>
 <div class="overlay" id="codexBox" style="display:none">
@@ -195,6 +200,7 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
     <div id="endText"></div>
     <div id="newAch" style="display:none"></div>
     <div id="endingsList"></div>
+    <div id="statsBox" style="display:none"></div>
     <div id="recapBox" style="display:none"></div>
     <div id="cardBox" style="display:none"></div>
     <button class="mbtn" onclick="newGame()">再玩一次</button>
@@ -208,8 +214,8 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 /* ================= 基础 ================= */
 const $=s=>document.querySelector(s);
 const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
-const SAVEK='deep_space_echoes_save_v1', ENDK='deep_space_echoes_endings_v1';
-const S={node:'',o2:100,en:60,hp:100,flags:{},items:{o2can:1,bat:1},log:[],lastBattle:null,battleRetreat:null,winFx:null,curEnding:null};
+const SAVEK='deep_space_echoes_save_v1', ENDK='deep_space_echoes_endings_v1', BESTK='deep_space_echoes_best_v1', TOTK='deep_space_echoes_total_v1';
+const S={node:'',o2:100,en:60,hp:100,flags:{},items:{o2can:1,bat:1},log:[],stats:{t0:Date.now(),nodes:0,battles:0,items:0},lastBattle:null,battleRetreat:null,winFx:null,curEnding:null};
 
 /* ================= 音频 ================= */
 const AU={ctx:null,on:true,
@@ -763,7 +769,7 @@ function renderFrame(t){
 function save(){try{localStorage.setItem(SAVEK,JSON.stringify(S))}catch(e){}}
 function loadSave(){try{const s=localStorage.getItem(SAVEK);if(!s)return false;
   const o=JSON.parse(s);if(!o.node||!NODES[o.node])return false;
-  S.node=o.node;S.o2=o.o2;S.en=o.en;S.hp=o.hp;S.flags=o.flags||{};S.items=o.items||{o2can:1,bat:1};S.log=o.log||[];S.lastBattle=o.lastBattle||null;S.battleRetreat=o.battleRetreat||null;return true;}catch(e){return false}}
+  S.node=o.node;S.o2=o.o2;S.en=o.en;S.hp=o.hp;S.flags=o.flags||{};S.items=o.items||{o2can:1,bat:1};S.log=o.log||[];S.stats=o.stats||{t0:Date.now(),nodes:0,battles:0,items:0};S.lastBattle=o.lastBattle||null;S.battleRetreat=o.battleRetreat||null;return true;}catch(e){return false}}
 function clearSave(){try{localStorage.removeItem(SAVEK)}catch(e){}}
 function loadEndings(){try{return JSON.parse(localStorage.getItem(ENDK))||{}}catch(e){return{}}}
 
@@ -825,6 +831,7 @@ function showNode(id){
   S.node=id;applyFx(n.fx);
   if(CHMAP[id])unlockChapter(CHMAP[id]);
   for(const ck in CODEX){if(CODEX[ck].u.includes(id))unlockCodex(ck);}
+  S.stats.nodes++;
   if(S.flags.trust_aiden)unlockAch('kind');
   if(S.flags.scan_aiden)unlockAch('detective');
   if(S.flags.dream_seen)unlockAch('dreamer');
@@ -861,7 +868,7 @@ function renderChoices(list){
 /* ================= 战斗 ================= */
 let BS=null;
 function startBattle(n,id){
-  S.lastBattle=id;S.battleRetreat=n.retreat||'a1_hub';S.winFx=n.winFx||null;save();
+  S.lastBattle=id;S.battleRetreat=n.retreat||'a1_hub';S.winFx=n.winFx||null;S.stats.battles++;save();
   BS={id:id,enemy:{name:n.enemy.name,hp:n.enemy.hp,max:n.enemy.hp,atk:n.enemy.atk},skill:n.enemy.skill||null,turn:0,scanned:false,busy:false};
   $('#endBox').style.display='none';$('#titleBox').style.display='none';$('#codexBox').style.display='none';$('#hud').style.display='block';
   $('#text').style.display='none';$('#choices').style.display='none';
@@ -874,6 +881,7 @@ function bLog(m){const el=$('#bLog');
   el.innerHTML='<b>▸ '+m.replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</b><br>'+el.innerHTML;}
 function useItem(k){
   if(!BS||BS.busy)return;
+  S.stats.items++;
   if(k==='o2can'){if(!S.items.o2can)return;S.items.o2can--;S.hp=Math.min(130,S.hp+30);bLog('使用氧气罐，船体 +30（'+S.hp+'）');AU.tone(600,.2,'sine',.04);}
   else if(k==='bat'){if(!S.items.bat)return;S.items.bat--;S.en=Math.min(200,S.en+25);bLog('使用备用电池，能量 +25（'+S.en+'）');AU.tone(820,.2,'sine',.04);}
   FX.shield();
@@ -969,6 +977,23 @@ function showEnding(id){
   for(const t of TL){const nm=NODES[t].title;
     html+=all[t]?'<span class="got">● '+nm+'</span><br>':'<span class="miss">○ ？？？</span><br>';}
   $('#endingsList').innerHTML=html;
+  /* ---- 本局统计与速通纪录 ---- */
+  const dur=Math.max(1,Math.round((Date.now()-(S.stats.t0||Date.now()))/1000));
+  const mm=Math.floor(dur/60),ss=dur%60;
+  const best=JSON.parse((function(){try{return localStorage.getItem(BESTK)||'{}'}catch(e){return'{}'}})());
+  const prev=best[id];
+  const isRec=!prev||dur<prev.t;
+  if(isRec){best[id]={t:dur,n:S.stats.nodes};try{localStorage.setItem(BESTK,JSON.stringify(best))}catch(e){}}
+  const tot=JSON.parse((function(){try{return localStorage.getItem(TOTK)||'{"t":0,"r":0}'}catch(e){return'{"t":0,"r":0}'}})());
+  tot.t+=dur;tot.r+=1;try{localStorage.setItem(TOTK,JSON.stringify(tot))}catch(e){}
+  let st='<b>本局数据</b>：⏱ '+mm+' 分 '+ss+' 秒 · 🧭 途经 '+S.stats.nodes+' 节点 · ⚔ '+S.stats.battles+' 场战斗';
+  if(S.stats.items)st+=' · 🧪 道具 ×'+S.stats.items;
+  st+='<br>';
+  if(!prev)st+='<span class="rec">🏁 首次抵达该结局，纪录已载入星图。</span>';
+  else if(isRec)st+='<span class="rec">🏁 新纪录！比上次快 '+(prev.t-dur)+' 秒。</span>';
+  else st+='该结局最快纪录：'+(function(p){return Math.floor(p.t/60)+' 分 '+(p.t%60)+' 秒 · '+p.n+' 节点';})(prev);
+  $('#statsBox').innerHTML=st;
+  $('#statsBox').style.display='block';
   if(S.log.length){
     const recap='我的旅途：\n'+S.log.map((x,i)=>(i+1)+'· '+x).join('\n');
     $('#recapBox').textContent=recap;
@@ -1087,10 +1112,12 @@ function showTitle(){
   $('#contBtn').style.display=has?'block':'none';
   if(has){$('#contBtn').textContent='继续旅程（'+({space:'深空',ship:'方舟',station:'回廊',sanctum:'圣坛',dream:'梦乡',danger:'战区'}[NODES[S.node].bg]||'星海')+'）';}
   const n=Object.keys(getChapters()).length;
-  $('#chBtn').style.display=n>1?'block':'none';}
+  $('#chBtn').style.display=n>1?'block':'none';
+  const tot=JSON.parse((function(){try{return localStorage.getItem(TOTK)||'{"t":0,"r":0}'}catch(e){return'{"t":0,"r":0}'}})());
+  $('#totalStats').textContent=tot.r>0?('已航行 '+tot.r+' 次 · 累计 '+Math.floor(tot.t/60)+' 分钟'):'尚未出航，星空在等它的第一位船长';}
 function newGame(){
   AU.init();AU.ui();
-  S.o2=100;S.en=60;S.hp=100;S.flags={};S.items={o2can:1,bat:1};S.log=[];S.lastBattle=null;S.battleRetreat=null;S.node='p0_signal';
+  S.o2=100;S.en=60;S.hp=100;S.flags={};S.items={o2can:1,bat:1};S.log=[];S.stats={t0:Date.now(),nodes:0,battles:0,items:0};S.lastBattle=null;S.battleRetreat=null;S.node='p0_signal';
   clearSave();
   $('#titleBox').style.display='none';$('#endBox').style.display='none';
   showNode('p0_signal');}
@@ -1189,7 +1216,7 @@ function toggleChPanel(){
 function jumpChapter(key){
   AU.init();AU.ui();
   const c=CHAPTERS[key];if(!c)return;
-  S.o2=100;S.en=60;S.hp=100;S.items={o2can:1,bat:1};S.log=[];
+  S.o2=100;S.en=60;S.hp=100;S.items={o2can:1,bat:1};S.log=[];S.stats={t0:Date.now(),nodes:0,battles:0,items:0};
   S.flags=c.flags?Object.assign({},c.flags):{};
   S.lastBattle=null;S.battleRetreat=null;
   clearSave();

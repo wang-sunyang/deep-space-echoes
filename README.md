@@ -2,6 +2,8 @@
 
 **One HTML file. Zero dependencies. A distress call answered 200 years too late.**
 
+> 🇨🇳 [中文版 README](README.zh-CN.md)
+
 A single-file sci-fi interactive fiction that runs entirely in your browser: a hand-written software 3D renderer, a procedurally synthesized soundtrack, a 7,000-word original story, 57 story nodes, 3 turn-based battles, and **7 endings** — all packed into ~70 KB of vanilla HTML/CSS/JS. No build step. No libraries. No CDN.
 
 ![social preview](assets/social-preview.png)
