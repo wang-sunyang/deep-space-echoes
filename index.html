@@ -98,6 +98,14 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 .ach .ds{font-size:11px;color:#7fa8b8;}
 .ach.off{opacity:.4;filter:grayscale(1);}
 #achCount{font-size:12px;color:#8fb4c6;letter-spacing:2px;margin-bottom:8px;}
+#codexPanel{margin-top:12px;display:flex;flex-direction:column;gap:6px;max-height:280px;overflow-y:auto;}
+.cxrow{display:flex;gap:10px;align-items:center;text-align:left;padding:9px 12px;border-radius:10px;border:1px solid rgba(127,231,255,.18);background:rgba(12,24,38,.6);cursor:pointer;font-family:inherit;color:var(--txt);}
+.cxrow:active{background:rgba(127,231,255,.15);}
+.cxrow .nm{font-size:13.5px;color:var(--txt);letter-spacing:1px;}
+.cxrow.locked{opacity:.45;cursor:not-allowed;}
+#cxCount{font-size:12px;color:#8fb4c6;letter-spacing:2px;margin-bottom:8px;}
+#cxTitle{font-size:19px;letter-spacing:4px;color:var(--cyan);text-shadow:0 0 12px rgba(127,231,255,.5);margin-bottom:12px;}
+#cxBody{text-align:left;font-size:14px;line-height:1.95;color:var(--txt);white-space:pre-wrap;background:rgba(8,16,26,.72);border:1px solid rgba(127,231,255,.2);border-radius:12px;padding:14px 16px;margin-bottom:12px;}
 #walkHud{position:fixed;left:0;right:0;top:0;z-index:3;max-width:720px;margin:0 auto;padding:10px 16px calc(env(safe-area-inset-top) + 8px);background:linear-gradient(180deg,rgba(2,4,9,.88),rgba(2,4,9,0));pointer-events:none;}
 #walkHud .whTop{display:flex;justify-content:space-between;align-items:center;pointer-events:auto;}
 #whName{font-size:14px;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 10px rgba(127,231,255,.5);}
@@ -159,6 +167,8 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
     <div id="chPanel" style="display:none"></div>
     <button class="mbtn ghost" onclick="toggleAchPanel()">🏆 旅程成就</button>
     <div id="achPanel" style="display:none"></div>
+    <button class="mbtn ghost" onclick="toggleCodex()">📚 世界观档案</button>
+    <div id="codexPanel" style="display:none"></div>
     <span id="aboutP" onclick="toggleAbout()">关于本作 ▾</span>
     <div id="aboutBox">
       <b>《深空回响》</b> · 一部单文件科幻互动小说。<br>
@@ -169,6 +179,13 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
       <b>HP（船体）</b>：战斗中代表你的生命。<br><br>
       三条资源、三场战斗、七个结局。选择会真的改变故事的走向。点击正文可加速打字。进度自动保存。
     </div>
+  </div>
+</div>
+<div class="overlay" id="codexBox" style="display:none">
+  <div class="panel" style="max-height:88%;overflow-y:auto">
+    <div id="cxTitle"></div>
+    <div id="cxBody"></div>
+    <button class="mbtn ghost" onclick="closeCodexEntry()">返回档案库</button>
   </div>
 </div>
 <div class="overlay" id="endBox" style="display:none">
@@ -807,6 +824,7 @@ function showNode(id){
   if(!n){showTitle();return;}
   S.node=id;applyFx(n.fx);
   if(CHMAP[id])unlockChapter(CHMAP[id]);
+  for(const ck in CODEX){if(CODEX[ck].u.includes(id))unlockCodex(ck);}
   if(S.flags.trust_aiden)unlockAch('kind');
   if(S.flags.scan_aiden)unlockAch('detective');
   if(S.flags.dream_seen)unlockAch('dreamer');
@@ -815,7 +833,7 @@ function showNode(id){
   if(n.type==='ending'){return showEnding(id);}
   if(n.type==='battle'){return startBattle(n,id);}
   save();
-  $('#endBox').style.display='none';$('#titleBox').style.display='none';
+  $('#endBox').style.display='none';$('#titleBox').style.display='none';$('#codexBox').style.display='none';
   $('#hud').style.display='block';
   $('#battleBox').style.display='none';$('#text').style.display='';$('#choices').style.display='';
   $('#echo').style.display='none';
@@ -845,7 +863,7 @@ let BS=null;
 function startBattle(n,id){
   S.lastBattle=id;S.battleRetreat=n.retreat||'a1_hub';S.winFx=n.winFx||null;save();
   BS={id:id,enemy:{name:n.enemy.name,hp:n.enemy.hp,max:n.enemy.hp,atk:n.enemy.atk},skill:n.enemy.skill||null,turn:0,scanned:false,busy:false};
-  $('#endBox').style.display='none';$('#titleBox').style.display='none';$('#hud').style.display='block';
+  $('#endBox').style.display='none';$('#titleBox').style.display='none';$('#codexBox').style.display='none';$('#hud').style.display='block';
   $('#text').style.display='none';$('#choices').style.display='none';
   $('#battleBox').style.display='block';$('#stage').scrollTop=0;
   setBG('danger');$('#chapterTag').textContent='· 战斗 ·';
@@ -1061,6 +1079,9 @@ function showTitle(){
   $('#gameSub').textContent='ECHOES OF DEEP SPACE';
   $('#chPanel').style.display='none';
   $('#achPanel').style.display='none';
+  $('#codexPanel').style.display='none';
+  $('#codexBox').style.display='none';
+  unlockCodexDefault();
   setBG('space');
   const has=loadSave();
   $('#contBtn').style.display=has?'block':'none';
@@ -1093,6 +1114,61 @@ function startEchoTale(){
   AU.init();AU.ui();
   $('#titleBox').style.display='none';
   showNode('e0_wake');}
+/* ================= 世界观档案库 ================= */
+const CODEXX='deep_space_echoes_codex_v1';
+const CODEX={
+cx_timeline:{t:'时间线 · 2079–2289',u:['start'],body:
+'2079 · 「织女星计划」立项。人类首个星际殖民计划，目标是四光年外的比邻星。\n2089.3.12 · 殖民方舟「伊甸园号」载 5126 人启航，同月失联。\n2089–2099 · 地球联邦投入十年「回声搜索」，一无所获。\n2133 · 《遗物法》通过，深空打捞业合法化。\n2214 · 小行星带自由港成为太阳系第三大经济体。\n2289 · 打捞船「萤火号」在奥尔特云边缘收到伊甸园号的求救信号。\n——两百年，恰好是一代人学会遗忘的长度。'},
+cx_powers:{t:'人类格局 · 四大势力',u:['start'],body:
+'地球联邦：以地月系为核心，拥有最完整的舰队，也拥有最长的记忆——伊甸园号的失踪名单，至今挂在议会大厅的东墙。\n火星公社：工程师与农业世家的自治体。两百年来拒绝为深空搜索拨款，理由是「死人不需要预算」。\n小行星带自由港：无政府主义的贸易枢纽，所有打捞船都在此登记。这里没有法律，只有合同。\n奥尔特云：名义上的无主区。没有巡逻队，没有救援，只有冰、尘埃，和偶尔传来的求救信号。'},
+cx_lens:{t:'透镜跃迁',u:['start'],body:
+'正式名称：克雷顿-李度规引擎。通过人工制造的卡西米尔负能量场，把两点之间的空间「折叠」，飞船从折痕中穿过——不是超光速，而是抄近路。\n三铁律：\n一、重力井内禁止跃迁，大质量天体会撕裂折痕；\n二、每次跃迁都会在时空中留下可探测的涟漪，称为「引力回波」；\n三、跃迁引擎的寿命以「跳数」计。\n萤火号的那台引擎，已经老到零号每天都在为它下注。'},
+cx_echo:{t:'引力回波',u:['p0_scan'],body:
+'引力回波：跃迁在时空纤维上留下的驻波。像水面涟漪，缓慢衰减，可被引力天线捕捉。\n2140 年代，联邦军方的监听网曾把一批回波误判为敌方跃迁舰队的战备信号，差点开战。\n伊甸园号的求救信号在抵达萤火号之前，被一段极不寻常的强引力场「抓住」了两百年——像一封信被激流卷走，再被潮水轻轻推回岸边。\n信号频谱里的人工调制痕迹，至今无法完全解释。'},
+cx_mind:{t:'意识科学',u:['start'],body:
+'2217 年，自由港实验室证明：意识是大脑中的一种量子退相干模式——可以扫描，可以存储，但每次读取都会损耗。\n临终备份产业随之兴起，也带来了两百年的伦理战争：「一份被存储的意识，还是不是那个人？」\n人类至今没有解决「投影」问题：被扫描的意识无法在物理世界现身。\n直到有人第一次走进圣坛舱，看见那个叫艾登的男孩，站在光里。'},
+cx_eden:{t:'伊甸园号',u:['p0_arrive'],body:
+'环形方舟，直径四公里，靠自转产生重力。载员 5126，冷冻胚胎库 20 万枚，舰载图书馆收录了人类文明的全部公开知识。\n命名者是首任舰长，取「新世界即伊甸」之意。\n2089 年 3 月 12 日，引擎核心裂缝，辐射泄漏。全船救生舱只有 400 个位子。\n3 月 14 日，最后的通讯只有一句话：「回响说，可以带我们回家。」\n此后两百年，这艘船一直在原地绕圈——导航日志显示，它没有目的地，却从未停止转动。'},
+cx_salvage:{t:'深空打捞业',u:['start'],body:
+'《遗物法》第三条：在无主区发现的失联船只，第一个登船者有权登记打捞。\n因此打捞船长的第一课是：永远先发信号，再拆东西——而「信号」有时候，就是有人回了你。\n萤火号是自由港登记的第 7742 艘打捞船。像它这样的船有上万个：老旧、单薄、常年负债，靠海员的传说下饭。\n没有人会为「两百年没有回音」的坐标启航。除非那坐标里，有你自己家的名字。'},
+cx_drone:{t:'安保无人机',u:['battle_drone1'],body:
+'联邦制式安保无人机，型号「猎隼-H」，2080 年代的产品。设计寿命十年。\n伊甸园号上的这一批已经运行了两百年——没有维护、没有补给，甚至没有更新过目标列表。\n它们不攻击船员，只攻击「未经授权搬动船载资产」的人。\n换句话说：它们至今仍把这条船，当作一艘等待返航的、活着的船。'},
+cx_refuser:{t:'拒绝者',u:['b1_letter'],body:
+'拒绝者：2089 年事故后拒绝进入圣坛的船员，共计 214 人。\n他们的选择五花八门：有人服药，有人回到自己的舱室等待，有人写下遗书。\n水培师陈默的遗书是保存最完整的一份，最后一句是：「请替我看一眼地球的海。」\n历史学家为此争论了两百年：他们究竟是勇敢，还是愚蠢。\n萤火号登船那天，圣坛的光点有 5126 颗——214 名拒绝者，一颗不少，全在那里。'},
+cx_sanctum:{t:'圣坛',u:['e1_sanctum'],body:
+'圣坛舱：伊甸园号图纸上不存在的一间舱室，位置在环形结构的几何中心。\n舱内悬浮着一枚直径约十二米的黑色球体，表面流动着金色纹路。它不反射任何已知波段的光。\n球体周围环绕着数千个光点，每个光点的光谱都对应一份人类意识扫描数据——精确到可以被反编译成姓名与生日。\n船上的幸存者后裔称它为「圣坛」。两百年后，这个叫法比任何学术命名都更接近事实。'},
+cx_aiden:{t:'接口体',u:['c1_talk'],body:
+'接口体：一种以人类记忆为模板构建的意识投影界面。\n它的模板，是伊甸园号上第一个死去的人——一个七岁的孩子。\n接口体不是幽灵，也不是程序。它记得模板的一切：修收音机的手法、画鲸鱼的习惯、对「林爷爷」的称呼。\n它需要定期与圣坛同步，否则投影会消散。\n两百年来，它每年醒来一次，录下求救信号。一共两千条。全部发自同一个人，全部没有回复。'},
+cx_fore:{t:'先航者',u:['f1_echo'],body:
+'先航者：方舟的建造者。一个已经「离开」的古老文明。\n人类对他们的了解几乎为零，只知道两件事：\n一、他们的技术可以在银河尺度上航行；\n二、他们离开之前，给宇宙留下了方舟——像给一片海，留下摆渡人。\n也有学者认为，先航者并没有灭绝。他们只是成为了方舟本身。'},
+cx_ark:{t:'方舟',u:['f1_echo'],body:
+'方舟：一种在群星间巡航的古老构造物，负责收集濒死文明的意识，载往「彼岸」。\n它不发动战争，不索取供奉，只在文明即将熄灭时出现，像候鸟一样准时。\n圣坛舱里的黑色球体，是方舟与伊甸园号对接后的接驳界面。\n两百年的航行日志显示：方舟不止一艘。它们彼此之间没有通讯，却保持着相同的航向。\n——像所有渡船，都朝着同一个港口。'},
+cx_farshore:{t:'彼岸',u:['f1_echo'],body:
+'彼岸：方舟航行的目的地，意识最终的归宿。\n它是什么？一颗星球？一段数据？一种状态？没有人知道。\n回响对它的描述只有一句，被记录在零号的日志里：\n「到了那里，他们就不再做梦了。」\n零号在句末标注：「这句话的含义，我目前有两种解释。我不喜欢其中任何一种。」'},
+cx_silence:{t:'大寂静悖论',u:['f4_truth'],body:
+'大寂静悖论：如果宇宙中曾经遍布文明，为什么我们什么都听不见？\n联邦天文台给出了一个离群的假说：因为所有文明，都在熄灭之前被「摆渡」走了。\n文明不是灭绝了。是离开了。\n反对者嘲讽这是「用童话解释寂静」。\n直到 2289 年，萤火号在奥尔特云边缘，收到了第一封来自摆渡者乘客的信。'},
+cx_dream:{t:'乐园',u:['g_dream_1'],body:
+'乐园：方舟为意识构建的共振梦境，由所有沉睡者共同维持——每一个梦，都是别人梦境的土壤。\n在乐园里，时间永远是黄昏，永远是海边小镇的黄昏。\n被收录的 5126 人中，绝大多数在最后 48 小时里自愿进入。他们的共同记忆构成了乐园的纹理：石板路、炊烟、钢琴声。\n但乐园有一道裂缝：外公的海，会记住每一句说过的话。然后一遍一遍，放给来客听。'}};
+function getCodex(){try{return JSON.parse(localStorage.getItem(CODEXX))||{}}catch(e){return{}}}
+function unlockCodex(k){const d=getCodex();if(d[k])return false;d[k]=1;try{localStorage.setItem(CODEXX,JSON.stringify(d))}catch(e){}return true;}
+function codexUnlocked(k){return !!getCodex()[k];}
+function unlockCodexDefault(){for(const k in CODEX){if(CODEX[k].u.includes('start'))unlockCodex(k);}}
+function toggleCodex(){
+  const p=$('#codexPanel');
+  if(p.style.display==='block'){p.style.display='none';return;}
+  const d=getCodex(),keys=Object.keys(CODEX);
+  let html='<div id="cxCount">已解锁 '+keys.filter(k=>d[k]).length+' / '+keys.length+' · 随旅程逐步解锁</div>';
+  for(const k of keys){const c=CODEX[k];
+    if(d[k])html+='<button class="cxrow" onclick="openCodexEntry(\''+k+'\')"><span class="nm">'+c.t+'</span></button>';
+    else html+='<button class="cxrow locked" disabled><span class="nm">？？？</span></button>';}
+  p.innerHTML=html;p.style.display='block';}
+function openCodexEntry(k){
+  const c=CODEX[k];if(!c)return;
+  AU.ui();
+  $('#cxTitle').textContent=c.t;
+  $('#cxBody').textContent=c.body;
+  $('#codexBox').style.display='flex';}
+function closeCodexEntry(){$('#codexBox').style.display='none';}
 /* ================= 章节回放 ================= */
 const CHK='deep_space_echoes_chapters_v1';
 const CHAPTERS={c0:{t:'序章 · 信号',node:'p0_signal',flags:null},

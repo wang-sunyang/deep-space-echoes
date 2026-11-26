@@ -16,6 +16,11 @@
 - Battle consumables (oxygen tank, spare battery) with pickups
 - Chapter replay with auto-unlock
 
+## v1.6 — 2026-11-26 — World bible & in-game Codex
+- Full world bible in [docs/CODEX.md](docs/CODEX.md): 2079–2289 timeline, four factions, lens-jump physics ("three iron laws"), consciousness science, the Great Silence paradox, the Forefleet/Ark/Far Shore cosmology, terminology, and 7 future-story hooks
+- In-game Codex: 16 lore entries unlocked as the story progresses (default entries + node-triggered unlocks), readable from the title screen
+- Every number in the story is now traceable to the bible (5126 souls, 400 lifeboats, 48 hours, 214 refusers, 73,050 awakenings, 2000 distress calls)
+
 ## v1.5 — 2026-11-26 — Easter eggs & farewell walk
 - Hidden chapter "Whispers of the Echo": tap the title 7 times on the title screen for a secret first-person tale told by the Echo itself
 - New walkable scene "The Last Door": the "turn away" route now ends with a first-person walk down a dark corridor toward the glowing airlock
