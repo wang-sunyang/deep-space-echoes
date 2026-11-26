@@ -16,6 +16,11 @@
 - Battle consumables (oxygen tank, spare battery) with pickups
 - Chapter replay with auto-unlock
 
+## v1.4 — 2026-11-26 — Walkable 3D scenes
+- Four playable first-person segments: the ark main corridor (choose doors by walking), the shadow chase, the sanctum gauntlet march, and the sunset pier walk toward grandfather
+- First-person camera for the software renderer, touch controls (drag left half to move, right half to look), locked-door hints, per-scene ambient lighting
+- Fixed: `flag:` condition prefix parsing (flags never matched before — conditional choices/doors now actually work)
+
 ## v1.3 — Same day — Differentiation & virality
 - ✦ Echo Mode (New Game+): 13 hidden inner monologues revealed after any ending
 - Captain's log: automatic decision journal + one-tap copy-paste recap for sharing

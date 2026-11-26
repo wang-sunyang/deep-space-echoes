@@ -24,6 +24,7 @@ On board: 5,126 sleeping souls, a boy named Aiden who has been awake for two cen
 | 🏆 **11 achievements** | From "gentle captain" to "omniscient" (all 7 endings) |
 | 📖 **Chapter replay** | Jump back into any unlocked chapter from the title screen |
 | 🎨 **Software-rendered 3D** | A from-scratch painter's-algorithm renderer on Canvas 2D — no WebGL. Low-poly ship, rotating ark, breathing sanctum, dream sea, 3D battle models with lasers & explosions |
+| 🚶 **Walkable 3D scenes** | Four first-person segments: walk the ark's main corridor and push open doors, chase a flickering shadow, march the sanctum gauntlet, and stroll the sunset pier toward your grandfather — drag to move, drag to look |
 | 🎵 **Synthesized soundtrack** | Every scene has its own WebAudio-generated ambient mode (no audio files!) plus UI/battle SFX |
 | 📱 **Mobile-first** | Vertical layout, one-thumb play, auto-save, works offline from a single file |
 

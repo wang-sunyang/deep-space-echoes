@@ -98,11 +98,21 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 .ach .ds{font-size:11px;color:#7fa8b8;}
 .ach.off{opacity:.4;filter:grayscale(1);}
 #achCount{font-size:12px;color:#8fb4c6;letter-spacing:2px;margin-bottom:8px;}
+#walkHud{position:fixed;left:0;right:0;top:0;z-index:3;max-width:720px;margin:0 auto;padding:10px 16px calc(env(safe-area-inset-top) + 8px);background:linear-gradient(180deg,rgba(2,4,9,.88),rgba(2,4,9,0));pointer-events:none;}
+#walkHud .whTop{display:flex;justify-content:space-between;align-items:center;pointer-events:auto;}
+#whName{font-size:14px;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 10px rgba(127,231,255,.5);}
+#whTip{font-size:11.5px;color:#9cc3d4;letter-spacing:1px;margin-top:6px;opacity:.85;}
+#whMsg{margin-top:8px;font-size:12.5px;color:var(--warn);letter-spacing:1px;animation:blink 1s infinite;}
 @media (min-width:640px){#text{font-size:18px;}#gameTitle{font-size:52px;}}
 </style>
 </head>
 <body>
 <canvas id="sky"></canvas>
+<div id="walkHud" style="display:none">
+  <div class="whTop"><span id="whName"></span><button class="hbtn" id="whExit" onclick="exitWalk()">✕ 退出</button></div>
+  <div id="whTip"></div>
+  <div id="whMsg" style="display:none"></div>
+</div>
 <div id="app">
   <div id="hud">
     <div id="hudTop">
@@ -235,7 +245,7 @@ MU.tick=function(){
 const cv=$('#sky'),cx=cv.getContext('2d');
 let W=0,H=0,T=0,FOC=624;
 function sizeSky(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
-const BG={space:[4,7,15],ship:[11,13,19],station:[17,12,23],sanctum:[21,9,27],dream:[26,15,9],danger:[23,5,6],void:[2,2,4]};
+const BG={space:[4,7,15],ship:[11,13,19],station:[17,12,23],sanctum:[21,9,27],dream:[26,15,9],danger:[23,5,6],void:[2,2,4],walk:[6,7,14]};
 let cur=[4,7,15],tgt=[4,7,15],scene='space',enemyKey=null,lastEnemy={x:0,y:0};
 function setBG(n){scene=n;enemyKey=null;if(BG[n])tgt=BG[n];MU.start(n);}
 function setBattleEnemy(k){enemyKey=k;FX.parts.length=0;FX.beams.length=0;FX.rings.length=0;}
@@ -342,6 +352,20 @@ function buildAll(){
     M.stars.push({x:Math.sin(b)*Math.cos(a),y:Math.sin(b)*Math.sin(a),z:Math.cos(b),ph:Math.random()*6.28,s:Math.random()*.8+.4});}
   M.orb=[];
   for(let i=0;i<60;i++)M.orb.push({a:Math.random()*6.28,ra:1.55+Math.random()*0.7,rb:0.95+Math.random()*0.5,sp:0.18+Math.random()*0.5,ph:Math.random()*6.28});
+  /* ---- 步行模式资产 ---- */
+  WALKX.shadow=octaMesh(0.3,[170,230,255]);
+  WALKX.grandpa=merge([
+    {verts:octaMesh(0.26,[204,208,218]).verts,faces:octaMesh(0.26,[204,208,218]).faces,pos:[0,0.42,0],rot:[0,0,0],sc:[1,1.45,1]},
+    {verts:octaMesh(0.15,[214,218,228]).verts,faces:octaMesh(0.15,[214,218,228]).faces,pos:[0,1.12,0],rot:[0,0,0],sc:1}]);
+  const dv=[],df=[];
+  const addQ=(a,b,c,d,col)=>{const off=dv.length/3;
+    dv.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]);
+    df.push({i:[off,off+1,off+2],c:col},{i:[off,off+2,off+3],c:col});};
+  addQ([-0.7,0.05,0],[0.7,0.05,0],[0.7,0.05,5.6],[-0.7,0.05,5.6],[112,86,62]);
+  addQ([-0.7,-0.12,0],[0.7,-0.12,0],[0.7,-0.12,5.6],[-0.7,-0.12,5.6],[74,56,42]);
+  for(let i=0;i<=5.6;i+=1.4)addQ([-0.62,0.05,i],[0.62,0.05,i],[0.62,-0.12,i],[-0.62,-0.12,i],[60,46,36]);
+  WALKX.dock={verts:dv,faces:df,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1,cull:false};
+  WALKX.ring=torusMesh(1.15,0.08,20,6,[214,172,92],[255,232,170]);
 }
 /* ---- 变换与渲染 ---- */
 const WVS=new Float32Array(4096);
@@ -356,11 +380,18 @@ function xformVerts(m,out){
     if(ry){const x1=x*cry+z*sry,z1=-x*sry+z*cry;x=x1;z=z1;}
     if(rz){const x1=x*crz-y*srz,y1=x*srz+y*crz;x=x1;y=y1;}
     out[i]=x+pos[0];out[i+1]=y+pos[1];out[i+2]=z+pos[2];}}
+let PROJY=0.30;
 function renderMesh(mesh,opt){
   opt=opt||{};
   const m=mesh,F=FOC,out=WVS,alpha=opt.alpha!==undefined?opt.alpha:(m.alpha||1);
   const wireA=m.wireA!==undefined?m.wireA:0.55;
+  const cam=opt.cam||null;
   xformVerts(m,out);
+  if(cam){
+    const cy=Math.cos(-cam.ay),sy=Math.sin(-cam.ay);
+    for(let i=0;i<m.verts.length;i+=3){
+      const x=out[i]-cam.x,z=out[i+2]-cam.z;
+      out[i]=x*cy+z*sy;out[i+2]=-x*sy+z*cy;}}
   cx.globalAlpha=alpha;
   const camZ=6,list=[];
   for(let fi=0;fi<m.faces.length;fi++){
@@ -371,18 +402,18 @@ function renderMesh(mesh,opt){
     const ux=bx-ax,uy=by-ay,uz=bz-az,wx=gx-ax,wy=gy-ay,wz=gz-az;
     const nx=uy*wz-uz*wy,ny=uz*wx-ux*wz,nz=ux*wy-uy*wx;
     if(m.cull!==false){
-      const mx=(ax+bx+gx)/3,my=(ay+by+gy)/3,mz=(az+bz+gz)/3;
-      if(nx*mx+ny*my+nz*(mz-camZ)>=0)continue;}
-    const d1=camZ-az,d2=camZ-bz,d3=camZ-gz;
+      const mx=(ax+bx+gx)/3-(cam?cam.x:0),my=(ay+by+gy)/3,mz=(az+bz+gz)/3-(cam?cam.z:0);
+      if(nx*mx+ny*my+nz*(mz-(cam?0:camZ))>=0)continue;}
+    const d1=cam?az:(camZ-az),d2=cam?bz:(camZ-bz),d3=cam?gz:(camZ-gz);
     if(d1<0.4||d2<0.4||d3<0.4)continue;
     const s1=F/d1,s2=F/d2,s3=F/d3;
     let k=0.5;
     const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
     k+=0.5*Math.max(0,(nx*0.42+ny*0.62+nz*0.66)/nl);
     list.push({z:(az+bz+gz)/3,
-      p1x:W/2+ax*s1,p1y:H*0.30-ay*s1,
-      p2x:W/2+bx*s2,p2y:H*0.30-by*s2,
-      p3x:W/2+gx*s3,p3y:H*0.30-gy*s3,f,k});}
+      p1x:W/2+ax*s1,p1y:H*PROJY-ay*s1,
+      p2x:W/2+bx*s2,p2y:H*PROJY-by*s2,
+      p3x:W/2+gx*s3,p3y:H*PROJY-gy*s3,f,k});}
   list.sort((a,b)=>b.z-a.z);
   for(const it of list){const f=it.f;
     let k2=it.k;
@@ -403,13 +434,13 @@ FX.playerHit=function(){this.flash=0.5;};
 FX.shield=function(){this.rings.push({t0:T,life:0.55});};
 FX.explode=function(){this.burst(0,0.5,-0.2,40,'rgba(255,160,80,',3.4);this.burst(0,0.5,-0.2,20,'rgba(255,230,180,',2);this.flash=0.3;};
 function projP(x,y,z){const d=6-z;if(d<0.4)return null;const s=FOC/d;
-  return [W/2+x*s,H*0.30-y*s,s];}
+  return [W/2+x*s,H*PROJY-y*s,s];}
 function drawFX(){
   for(let i=FX.parts.length-1;i>=0;i--){const p=FX.parts[i];
     p.life-=0.016;p.x+=p.vx*0.016;p.y+=p.vy*0.016;p.z+=p.vz*0.016;
     if(p.life<=0){FX.parts.splice(i,1);continue;}
     const d=6-p.z;if(d<0.4)continue;const s=FOC/d;
-    const sx=W/2+p.x*s,sy=H*0.30-p.y*s;
+    const sx=W/2+p.x*s,sy=H*PROJY-p.y*s;
     cx.globalAlpha=Math.min(1,p.life*2.2);
     cx.fillStyle=p.col+'0.9)';
     cx.beginPath();cx.arc(sx,sy,Math.max(0.5,p.sz*s/7),0,6.29);cx.fill();}
@@ -440,7 +471,7 @@ function drawStars(){
     const a=0.22+0.7*Math.abs(Math.sin(st.ph+T*1.2));
     if(warm)cx.fillStyle='rgba(255,205,150,'+(a*0.5).toFixed(2)+')';
     else cx.fillStyle='rgba(190,225,255,'+(a*0.9).toFixed(2)+')';
-    cx.beginPath();cx.arc(W/2+x*FOC,H*0.30-st.y*FOC,st.s,0,6.29);cx.fill();}}
+    cx.beginPath();cx.arc(W/2+x*FOC,H*PROJY-st.y*FOC,st.s,0,6.29);cx.fill();}}
 /* ---- 场景渲染 ---- */
 function renderShip(){
   const m=M.ship;
@@ -536,13 +567,161 @@ function vignette(){
   g=cx.createLinearGradient(W,0,W*0.93,0);
   g.addColorStop(0,'rgba(1,3,8,0.4)');g.addColorStop(1,'rgba(1,3,8,0)');
   cx.fillStyle=g;cx.fillRect(W*0.93,0,W*0.07,H);}
+/* ================= 可操作步行模式 ================= */
+const WALKX={};
+const WALKDEF={
+corridor:{name:'伊甸园号 · 主廊道',tip:'左半屏拖动：移动　右半屏拖动：环视　走向一扇门',len:14,w:2.8,h:2.3,light:'dim',
+  gates:[
+   {z:3,side:'L',label:'舰桥',node:'b1_bridge'},
+   {z:6,side:'R',label:'居住区',node:'b1_habitat'},
+   {z:9,side:'L',label:'反应堆舱',node:'b1_reactor'},
+   {z:13,side:'F',label:'中央城区',node:'a1_hub',need:'flag:vb,flag:vh,flag:vr',lock:'这扇门锁着——先探索舰桥、居住区与反应堆'}]},
+chase:{name:'幽暗走廊',tip:'追上那个人影',len:20,w:2.4,h:2.2,light:'dark',special:'chase',end:{z:19,node:'b1_chase'}},
+gate:{name:'圣坛之路',tip:'走向圣坛舱大门',len:16,w:3.0,h:2.8,light:'dim',special:'gate',end:{z:15,node:'battle_memories'}},
+dream:{name:'黄昏 · 海边小镇',tip:'走向码头上的外公',len:12,w:4.2,h:0,light:'day',special:'sea',end:{z:10.5,node:'g_dream_1'}}};
+let WALK=null;
+const TOUCH={on:false,side:'L',lx:0,ly:0,ddx:0,ddy:0};
+function buildWalkMesh(def){
+  const verts=[],faces=[],w=def.w,h=def.h;
+  const addQuad=(a,b,c,d,col,e,ph)=>{
+    const off=verts.length/3;
+    verts.push(a[0],a[1],a[2],b[0],b[1],b[2],c[0],c[1],c[2],d[0],d[1],d[2]);
+    faces.push({i:[off,off+1,off+2],c:col,e:e,ph:ph},{i:[off,off+2,off+3],c:col,e:e,ph:ph});};
+  const wallC=def.light==='dark'?[40,48,64]:def.light==='day'?[96,78,58]:[74,88,104];
+  const floorC=def.light==='dark'?[24,30,42]:def.light==='day'?[120,100,72]:[46,56,70];
+  const ceilC=def.light==='dark'?[16,20,30]:[30,40,52];
+  for(let i=0;i<def.len;i++){
+    const z0=i,z1=i+1;
+    const sh=0.82+0.18*Math.sin(i*3.71);
+    const wc=[wallC[0]*sh|0,wallC[1]*sh|0,wallC[2]*sh|0];
+    addQuad([-w/2,0,z0],[-w/2,h,z0],[-w/2,h,z1],[-w/2,0,z1],wc);
+    addQuad([w/2,0,z0],[w/2,h,z0],[w/2,h,z1],[w/2,0,z1],wc);
+    addQuad([-w/2,0,z0],[-w/2,0,z1],[w/2,0,z1],[w/2,0,z0],floorC);
+    if(h>0)addQuad([-w/2,h,z0],[-w/2,h,z1],[w/2,h,z1],[w/2,h,z0],ceilC);}
+  if(def.light==='dim'){for(let i=0;i<def.len;i+=2)
+    addQuad([-0.12,h,i],[0.12,h,i],[0.12,h,Math.min(def.len,i+1.6)],[-0.12,h,Math.min(def.len,i+1.6)],[140,220,255],1,i);}
+  if(def.light==='dark'){for(let i=0;i<def.len;i+=3)
+    addQuad([-0.1,h,i],[0.1,h,i],[0.1,h,i+0.8],[-0.1,h,i+0.8],[200,70,70],1,i*2.7);}
+  for(const g of def.gates||[]){
+    const z0=g.z-0.4,z1=g.z+0.4,ph=g.z;
+    const gc=g.side==='F'?[255,200,120]:[90,210,255];
+    if(g.side==='L'){
+      addQuad([-w/2,0.1,z0],[-w/2,2.0,z0],[-w/2,2.0,z1],[-w/2,0.1,z1],gc,1,ph);
+      addQuad([-w/2,2.0,z0],[-w/2,2.2,z0],[-w/2,2.2,z1],[-w/2,2.0,z1],[200,240,255],1,ph);}
+    else if(g.side==='R'){
+      addQuad([w/2,0.1,z0],[w/2,2.0,z0],[w/2,2.0,z1],[w/2,0.1,z1],gc,1,ph);
+      addQuad([w/2,2.0,z0],[w/2,2.2,z0],[w/2,2.2,z1],[w/2,2.0,z1],[200,240,255],1,ph);}
+    else{
+      addQuad([-1.1,0.1,g.z],[1.1,0.1,g.z],[1.1,2.3,g.z],[-1.1,2.3,g.z],gc,1,ph);}}
+  addQuad([-w/2,0,def.len],[w/2,0,def.len],[w/2,h,def.len],[-w/2,h,def.len],wallC);
+  return {verts,faces,pos:[0,0,0],rot:[0,0,0],sc:1,alpha:1,cull:false};}
+function projCam(x,y,z,w){
+  const cy=Math.cos(-w.angle),sy=Math.sin(-w.angle);
+  const rx=x-w.px,rz=z-w.pz;
+  const cx2=rx*cy+rz*sy,cz2=-rx*sy+rz*cy;
+  if(cz2<0.4)return null;
+  const s=FOC/cz2;
+  return [W/2+cx2*s,H*PROJY-y*s,s];}
+let walkMsgTimer=null;
+function showWalkMsg(t){
+  const el=$('#whMsg');el.textContent=t;el.style.display='block';
+  if(walkMsgTimer)clearTimeout(walkMsgTimer);
+  walkMsgTimer=setTimeout(()=>{el.style.display='none';},2600);}
+function startWalk(id){
+  const d=WALKDEF[id];if(!d)return;
+  AU.init();
+  if(WALK&&WALK.def!==d)WALK=null;
+  if(!WALK)WALK={def:d,mesh:buildWalkMesh(d),px:0,pz:0.5,angle:0,back:S.node};
+  PROJY=0.45;
+  $('#text').style.display='none';$('#choices').style.display='none';
+  $('#battleBox').style.display='none';$('#echo').style.display='none';
+  $('#hud').style.display='block';
+  $('#walkHud').style.display='block';
+  $('#whName').textContent='▸ '+d.name;
+  $('#whTip').textContent=d.tip;
+  $('#whMsg').style.display='none';
+  setBG('walk');
+  document.body.style.touchAction='none';
+  save();}
+function stopWalk(){
+  if(!WALK)return;
+  PROJY=0.30;
+  $('#walkHud').style.display='none';
+  document.body.style.touchAction='';
+  WALK=null;}
+function exitWalk(){if(!WALK)return;const b=WALK.back;stopWalk();showNode(b);}
+function renderWalkScene(){
+  const w=WALK,d=w.def;
+  if(TOUCH.on){
+    if(TOUCH.side==='L'){
+      w.pz+=TOUCH.ddy*0.0045;
+      w.px+=TOUCH.ddx*0.0032;}
+    else w.angle+=TOUCH.ddx*0.0042;
+    TOUCH.ddx=0;TOUCH.ddy=0;}
+  const hw=d.w/2;
+  w.px=Math.max(-hw+0.28,Math.min(hw-0.28,w.px));
+  w.pz=Math.max(0.5,Math.min(d.len-0.55,w.pz));
+  const cam={x:w.px,z:w.pz,ay:w.angle};
+  renderMesh(w.mesh,{cam:cam});
+  if(d.special==='chase'){
+    const target=Math.min(d.len-0.8,Math.max(6,w.pz+4.5));
+    const sh=WALKX.shadow;
+    sh.pos=[0,0.85+Math.sin(T*6)*0.05,target];sh.rot=[0,T*1.5,0];
+    renderMesh(sh,{cam:cam,alpha:0.85});
+    const p=projCam(0,1.2,target,w);
+    if(p){cx.fillStyle='rgba(170,230,255,0.18)';
+      cx.beginPath();cx.arc(p[0],p[1],Math.max(10,p[2]*0.28),0,6.29);cx.fill();}}
+  else if(d.special==='gate'){
+    const ring=WALKX.ring;
+    ring.pos=[0,1.4,d.len-0.5];ring.rot=[0,0,0];
+    renderMesh(ring,{cam:cam});
+    const m=M.memories;
+    for(let i=0;i<4;i++){
+      m.pos=[(i%2?1:-1)*(d.w/2-0.55),0,3.5+i*3];m.rot=[0,T*0.2+i,0];
+      renderMesh(m,{cam:cam,alpha:0.4});}}
+  else if(d.special==='sea'){
+    const sea=M.sea;
+    sea.pos=[0,-0.32,5.6];sea.rot=[0,0,0];
+    renderMesh(sea,{cam:cam,alpha:0.96});
+    const dock=WALKX.dock;
+    dock.pos=[0,0.02,6.4];
+    renderMesh(dock,{cam:cam});
+    const gp=WALKX.grandpa;
+    gp.pos=[0,0.92,10.8];gp.rot=[0,Math.PI*0.15,0];
+    renderMesh(gp,{cam:cam});
+    const lh=M.lighthouse;
+    lh.pos=[4.2,-0.35,3.2];
+    renderMesh(lh,{cam:cam,alpha:0.9});}
+  for(const g of d.gates||[]){
+    const dgz=w.pz-g.z;
+    const near=Math.abs(dgz)<0.6;
+    const hit=g.side==='F'?(w.pz>=g.z-0.5&&Math.abs(w.px)<1.1):(near&&(g.side==='L'?w.px<-hw+0.6:g.side==='R'?w.px>hw-0.6:false));
+    if(hit){
+      if(g.need&&!condOk(g.need)){showWalkMsg(g.lock||'');}
+      else{stopWalk();go(g.node);return;}}}
+  if(d.end&&w.pz>=d.end.z){stopWalk();go(d.end.node);return;}
+  for(const g of d.gates||[]){
+    const p=projCam(g.side==='F'?0:(g.side==='L'?-d.w/2:d.w/2),1.15,g.z,w);
+    if(!p||p[2]<0.4)continue;
+    if(p[0]<-30||p[0]>W+30)continue;
+    const locked=g.need&&!condOk(g.need);
+    cx.font='600 12px sans-serif';cx.textAlign='center';
+    cx.fillStyle=locked?'rgba(140,150,160,.75)':'rgba(140,240,255,.95)';
+    cx.fillText(g.label+(locked?' 🔒':' ▸'),p[0],p[1]-Math.min(30,p[2]*0.3));}}
+addEventListener('touchstart',function(e){if(!WALK)return;
+  for(const t of e.changedTouches){if(!TOUCH.on){TOUCH.on=true;TOUCH.side=t.clientX<W/2?'L':'R';TOUCH.lx=t.clientX;TOUCH.ly=t.clientY;}}},{passive:false});
+addEventListener('touchmove',function(e){if(!WALK||!TOUCH.on)return;e.preventDefault();
+  for(const t of e.changedTouches){TOUCH.ddx+=t.clientX-TOUCH.lx;TOUCH.ddy+=t.clientY-TOUCH.ly;TOUCH.lx=t.clientX;TOUCH.ly=t.clientY;}},{passive:false});
+addEventListener('touchend',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
+addEventListener('touchcancel',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
 function renderFrame(t){
   T=t/1000;FOC=Math.min(W,H)*1.6;
   for(let i=0;i<3;i++)cur[i]+=(tgt[i]-cur[i])*.025;
-  if(scene==='dream')dreamSky();
+  if(scene==='dream'||(WALK&&WALK.def.light==='day'))dreamSky();
   else{cx.fillStyle='rgb('+(cur[0]|0)+','+(cur[1]|0)+','+(cur[2]|0)+')';cx.fillRect(0,0,W,H);}
   drawStars();
-  if(scene==='space')renderShip();
+  if(WALK)renderWalkScene();
+  else if(scene==='space')renderShip();
   else if(scene==='ship')renderArk(true);
   else if(scene==='station')renderArk(false);
   else if(scene==='sanctum')renderSanctum();
@@ -568,7 +747,7 @@ function condOk(c){if(!c)return true;
     if(m){const v=S[m[1]]??0,n=+m[3];
       switch(m[2]){case'>=':return v>=n;case'<=':return v<=n;case'>':return v>n;case'<':return v<n;case'==':return v==n;case'!=':return v!=n;}}
     if(one.startsWith('!flag:'))return !S.flags[one.slice(6)];
-    if(one.startsWith('flag:'))return !!S.flags[one.slice(4)];
+    if(one.startsWith('flag:'))return !!S.flags[one.slice(5)];
     return true;});}
 function condHint(c){if(!c)return'';
   const p=c.split(',')[0].trim(),m=p.match(/^([a-z_]+)\s*(>=|<=|==|!=|>|<)\s*(-?\d+)$/);
@@ -610,6 +789,7 @@ function go(to){
   if(to==='!title'){showTitle();return;}
   if(to==='!battle'){if(NODES[S.lastBattle])startBattle(NODES[S.lastBattle],S.lastBattle);return;}
   if(to==='!retreat'){showNode(S.battleRetreat);return;}
+  if(to.startsWith('!walk:')){startWalk(to.slice(6));return;}
   showNode(to);}
 function showNode(id){
   const n=NODES[id];
@@ -944,12 +1124,8 @@ text:'跃迁结束。\n伊甸园号出现在眼前：一座直径四公里的环
 choices:[{t:'对接气闸，登船',to:'a1_airlock'}]},
 /* ============ 第一章 · 寂静方舟 ============ */
 a1_airlock:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',
-text:'气闸在液压声中缓缓打开。冷空气涌进来，带着金属和消毒水的气味。主灯是坏的，应急灯带发出微弱的红光。\n「氧气浓度 19%，可呼吸。就是冷了点——零下十二度。」零号说。\n你们踏进伊甸园号。地板上的灰尘，已经有两百年厚。\n「船长，建议探索顺序：舰桥、居住区、反应堆。您先走哪边？」',
-choices:[
-{t:'舰桥',to:'b1_bridge',fx:{o2:-4}},
-{t:'居住区',to:'b1_habitat',fx:{o2:-4}},
-{t:'反应堆舱',to:'b1_reactor',fx:{o2:-4}},
-{t:'三处都查过 → 前往中央城区',to:'a1_hub',cond:'flag:vb,flag:vh,flag:vr'}]},
+text:'气闸在液压声中缓缓打开。冷空气涌进来，带着金属和消毒水的气味。主灯是坏的，应急灯带发出微弱的红光。\n「氧气浓度 19%，可呼吸。就是冷了点——零下十二度。」零号说。\n你们踏进伊甸园号。地板上的灰尘，已经有两百年厚。\n「船长，」零号压低声音，「主廊道里有三扇门：舰桥、居住区、反应堆。走过去，推开它。」',
+choices:[{t:'走进主廊道（3D 步行）',to:'!walk:corridor',fx:{o2:-4}}]},
 b1_bridge:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'vb',o2:-5},
 text:'舰桥。全景舷窗外是永恒的星空。主控台蒙着灰，你擦开一个角落，屏幕居然还能亮。\n航行日志，2089 年 3 月：\n「3 月 12 日：引擎核心裂缝，辐射泄漏。全船 5126 人，预估存活窗口 48 小时。」\n「3 月 13 日：暴动。一半船员涌向救生舱——救生舱只有 400 个位子。」\n「3 月 14 日：他们去了圣坛舱。他们说，回响可以带我们回家。」\n日志到此为止。零号调出导航记录：「奇怪。这艘船两百年里……一直在原地绕圈。像舍不得走。」',
 choices:[
@@ -972,10 +1148,10 @@ choices:[{t:'把信收好，继续探索',to:'b1_shadow'}]},
 b1_shadow:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'saw_shadow',o2:-4},
 text:'突然，走廊尽头有个人影一闪而过。脚步很轻，像赤脚踩在金属地板上。\n「船长，热成像没有目标。那东西没有体温。」零号的声音绷紧了。',
 choices:[
-{t:'追上去',to:'b1_chase',fx:{o2:-6}},
+{t:'追上去（3D 步行）',to:'!walk:chase',fx:{o2:-6}},
 {t:'慢慢退出去',to:'a1_hub'}]},
 b1_chase:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',
-text:'你追过三个拐角，只看见空气。地上有一串小脚印，光着脚的，十岁左右。\n脚印在走廊中间凭空消失。\n零号：「能量读数在这个位置出现过一个尖峰，然后归零。船长，这东西……不是实体。」',
+text:'你追到走廊尽头，只看见空气。地上有一串小脚印，光着脚的，十岁左右。\n脚印在最后一扇门前凭空消失。\n零号：「能量读数在这个位置出现过一个尖峰，然后归零。船长，这东西……不是实体。」',
 choices:[{t:'返回中央大厅',to:'a1_hub'}]},
 b1_reactor:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'vr',o2:-5},
 text:'反应堆舱。核心还在运转，低沉的嗡鸣像巨兽的心跳。仪表显示，它在用某种未知的方式维持着整艘船的生命系统——维持了两百年。\n角落里堆着几组高能电池，接口还新着。\n「拆电池能补充萤火号的能量储备。」零号提醒，「但可能触发安保无人机。」',
@@ -1016,7 +1192,7 @@ text:'「林爷爷很好。」艾登低下头，「在梦里，他每天都在�
 choices:[{t:'前往圣坛舱',to:'d1_gate'}]},
 d1_gate:{ch:'第二章 · 回响',bg:'danger',who:'旁白',whoClass:'gray',
 text:'圣坛舱的大门是一整块暗色合金，门上刻满了不属于任何人类文明的纹路。\n你伸手触碰——整艘船突然震动。\n走廊两端，灰白色的光在凝聚，变成一个个模糊的人形。没有脸，只有轮廓。它们排成两列，拦在门前。\n「那是船员的记忆残影。」零号说，「圣坛的防御机制。船长，它们要动手了。」',
-choices:[{t:'迎战',to:'battle_memories'}]},
+choices:[{t:'走向圣坛舱大门（3D 步行）',to:'!walk:gate'}]},
 battle_memories:{type:'battle',bg:'danger',
 intro:'记忆体们无声地扑了上来。',
 enemy:{name:'记忆体 ×2',hp:110,atk:12,skill:{every:4,name:'记忆缠绕',heal:18}},
@@ -1036,13 +1212,13 @@ text:'黑球表面泛起涟漪，一个声音直接在你的颅骨里响起—�
 choices:[
 {t:'「陈默没有选择乐园。」',to:'f2_letter',cond:'flag:letter'},
 {t:'「拒绝你的人，去哪了？」',to:'f2_letter'},
-{t:'「让我看看乐园。」',to:'g_dream_1',fx:{log:'走进乐园，在黄昏的海边见到了外公'}},
+{t:'「让我看看乐园。」（3D 步行）',to:'!walk:dream'},
 {t:'「我不信你。我要带船离开。」',to:'f5_refuse'}]},
 f2_letter:{ch:'第二章 · 回响',bg:'sanctum',who:'回响',whoClass:'purple',
 text:'「陈默……我记得他。他拒绝了我。他说死就是死，他不逃。」\n声音顿了顿，第一次出现犹疑：「但我不理解。死亡是意识的终结，是所有可能性的熄灭。他为何要选择熄灭？」\n艾登的声音从你身后传来，很轻：「因为它不明白。它对『活』的理解，和我们不一样。所以它把拒绝的人，也收走了。」\n「他们全都醒不过来。包括我的爸爸妈妈。我用了两百年，才想明白一件事。」\n艾登抬起头，眼睛里有光：「死不是敌人。忘不掉的人，才是回不去的家。」',
 choices:[
 {t:'「你想让我做什么？」',to:'f4_truth'},
-{t:'「先让我进乐园看看。」',to:'g_dream_1'},
+{t:'「先让我进乐园看看。」（3D 步行）',to:'!walk:dream'},
 {t:'「我不信你。我要带船离开。」',to:'f5_refuse'}]},
 f4_truth:{ch:'第三章 · 抉择',bg:'sanctum',who:'零号',fx:{o2:-3},
 text:'零号的声音插了进来：「船长，我刚破译了求救信号的完整层。那个信号不是回响发的。」\n「是艾登。」\n「信号里藏着两千条一模一样的语音。两百年——他每年醒来一次，录下求救，然后被回响的周期重启。他一个人，守着这艘船，等了两百年。」\n艾登点头：「它把我造出来，是为了和人类说话。可后来，它不需要我了。只有我……没有睡着。」\n他向你伸出半透明的手：「船长，帮帮我们。叫醒大家——或者，让林爷爷他们回家。」\n零号列出了三条路，也列了每条路的代价。',
@@ -1109,7 +1285,7 @@ choices:[{t:'启动跃迁，离开',to:'ending_burn'}]},
 ending_burn:{type:'ending',id:'ending_burn',bg:'void',rank:'C',title:'结局 · 熄灭的方舟',
 text:'你回到地球，没人给你颁发勋章。\n方舟残骸的碎片像一场雪，缓缓飘进奥尔特云。五百个救生舱位、一百二十年的等待、一封迟到的信——都不存在了。\n夜深的时候，你会想起那个光着脚的男孩，和他最后的口型。\n有些船，沉没以后，反而永远浮在你心里。'},
 /* ============ 第三章 · 梦境路线 ============ */
-g_dream_1:{ch:'第二章 · 回响',bg:'dream',who:'旁白',whoClass:'gray',fx:{o2:-3},
+g_dream_1:{ch:'第二章 · 回响',bg:'dream',who:'旁白',whoClass:'gray',fx:{o2:-3,log:'走进乐园，在黄昏的海边见到了外公'},
 text:'你走进乐园。\n一步之间，铁灰色舱壁化成了海风。黄昏的海边小镇，石板路，路灯刚刚亮起。空气里有咸味、炊烟味，和不知道哪里飘来的钢琴声。\n码头上坐着一个老人，在钓鱼。\n听见脚步声，他回过头。\n「渊渊？」外公手里的鱼竿掉在地上，「你怎么……你怎么老了？」他笑了，又哭了，「哦，不对。是我老了。」',
 choices:[
 {t:'抱住他',to:'g_dream_2'},
