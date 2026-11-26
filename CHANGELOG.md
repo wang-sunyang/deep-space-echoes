@@ -16,6 +16,12 @@
 - Battle consumables (oxygen tank, spare battery) with pickups
 - Chapter replay with auto-unlock
 
+## v1.5 — 2026-11-26 — Easter eggs & farewell walk
+- Hidden chapter "Whispers of the Echo": tap the title 7 times on the title screen for a secret first-person tale told by the Echo itself
+- New walkable scene "The Last Door": the "turn away" route now ends with a first-person walk down a dark corridor toward the glowing airlock
+- 2 new achievements (13 total): "First Star" (crack the signal *and* be gentle to Aiden), "Whispers of the Stars" (finish the hidden chapter)
+- Node effects can now unlock achievements directly (`ach` key)
+
 ## v1.4 — 2026-11-26 — Walkable 3D scenes
 - Four playable first-person segments: the ark main corridor (choose doors by walking), the shadow chase, the sanctum gauntlet march, and the sunset pier walk toward grandfather
 - First-person camera for the software renderer, touch controls (drag left half to move, right half to look), locked-door hints, per-scene ambient lighting

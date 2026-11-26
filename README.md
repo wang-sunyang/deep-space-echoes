@@ -21,7 +21,8 @@ On board: 5,126 sleeping souls, a boy named Aiden who has been awake for two cen
 | ✦ **Echo Mode (New Game+)** | Beat any ending once and replays reveal hidden inner monologues for 13 scenes — the same story, a completely different emotional layer |
 | 🖼 **Share cards** | Every ending generates a personalized 3:4 image card (your ending + your choices) to save and post |
 | 📋 **Captain's log** | The game silently journals your key decisions and turns them into a copy-paste recap for sharing |
-| 🏆 **11 achievements** | From "gentle captain" to "omniscient" (all 7 endings) |
+| 🏆 **13 achievements** | From "gentle captain" to "omniscient" (all 7 endings), plus rare combo & Easter-egg achievements |
+| 🥚 **Hidden Easter eggs** | Tap the title 7 times for a secret first-person chapter told by the Echo itself — and a walkable farewell corridor on the "turn away" route |
 | 📖 **Chapter replay** | Jump back into any unlocked chapter from the title screen |
 | 🎨 **Software-rendered 3D** | A from-scratch painter's-algorithm renderer on Canvas 2D — no WebGL. Low-poly ship, rotating ark, breathing sanctum, dream sea, 3D battle models with lasers & explosions |
 | 🚶 **Walkable 3D scenes** | Four first-person segments: walk the ark's main corridor and push open doors, chase a flickering shadow, march the sanctum gauntlet, and stroll the sunset pier toward your grandfather — drag to move, drag to look |
