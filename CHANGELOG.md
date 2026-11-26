@@ -16,6 +16,13 @@
 - Battle consumables (oxygen tank, spare battery) with pickups
 - Chapter replay with auto-unlock
 
+## v1.8 — 2026-11-26 — Fullscreen, settings & controller support
+- One-tap fullscreen (HUD button + `F` key + gamepad Ⓧ) with automatic canvas re-layout on change
+- Settings panel (HUD ⚙ / gamepad Ⓨ / `Esc`-menu): text speed, graphics quality (battery saver vs HD), screen shake, gamepad rumble — all persisted in localStorage
+- Full gamepad navigation: D-pad + left stick to select, Ⓐ confirm, Ⓑ back, analog sticks for walkable scenes (move + look), connection status shown in settings
+- Full keyboard support: ↑↓/←→ select, Enter/Space confirm, Esc back, `F` fullscreen, `M` mute, `1-9` quick-pick
+- Screen shake feedback on player hits & explosions; haptic rumble on supported controllers
+
 ## v1.7 — 2026-11-26 — Journey stats & speedrun records
 - Per-run stats on the ending screen: play time, nodes traversed, battles fought, items used
 - Personal speedrun records per ending (stored locally), with "first arrival" and "new record" callouts

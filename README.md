@@ -30,6 +30,8 @@ On board: 5,126 sleeping souls, a boy named Aiden who has been awake for two cen
 | 🎨 **Software-rendered 3D** | A from-scratch painter's-algorithm renderer on Canvas 2D — no WebGL. Low-poly ship, rotating ark, breathing sanctum, dream sea, 3D battle models with lasers & explosions |
 | 🚶 **Walkable 3D scenes** | Four first-person segments: walk the ark's main corridor and push open doors, chase a flickering shadow, march the sanctum gauntlet, and stroll the sunset pier toward your grandfather — drag to move, drag to look |
 | 🎵 **Synthesized soundtrack** | Every scene has its own WebAudio-generated ambient mode (no audio files!) plus UI/battle SFX |
+| 🎮 **Gamepad & keyboard** | Full navigation with a controller (D-pad/sticks, Ⓐ confirm, Ⓑ back, Ⓧ fullscreen, Ⓨ settings) or keyboard (↑↓/Enter/Esc/F/M/1-9). Walkable scenes support dual-stick movement |
+| ⛶ **Fullscreen & settings** | One-tap fullscreen with adaptive re-layout; settings panel for text speed, graphics quality, screen shake and gamepad rumble (all persisted) |
 | 📱 **Mobile-first** | Vertical layout, one-thumb play, auto-save, works offline from a single file |
 
 ## 🎮 Play

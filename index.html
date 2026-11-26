@@ -45,6 +45,8 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
  font-family:inherit;transition:transform .08s ease,border-color .2s;animation:rise .45s ease both;}
 .choice:active{transform:scale(.985);border-color:var(--cyan);background:rgba(127,231,255,.18);}
 .choice:disabled{opacity:.42;cursor:not-allowed;}
+.choice.sel{border-color:var(--cyan);background:rgba(127,231,255,.2);box-shadow:0 0 0 1px var(--cyan),0 0 18px rgba(127,231,255,.35);transform:translateX(3px);}
+.choice.sel::before{content:'▶ ';color:var(--cyan);}
 .choice small{font-size:11.5px;color:#7fa8b8;letter-spacing:1px;}
 @keyframes rise{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:none;}}
 
@@ -110,6 +112,24 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 #statsBox b{color:var(--cyan);font-weight:600;}
 #statsBox .rec{color:var(--gold);}
 #totalStats{margin-top:16px;font-size:11.5px;color:#7fa8b8;letter-spacing:2px;}
+/* ---------- 设置面板 ---------- */
+.setTitle{font-size:22px;letter-spacing:8px;color:#e8fbff;text-shadow:0 0 20px rgba(127,231,255,.7);margin-bottom:18px;}
+.setRow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 4px;border-bottom:1px solid rgba(127,231,255,.13);}
+.setLab{text-align:left;font-size:14.5px;color:var(--txt);flex:1;}
+.setLab small{display:block;font-size:11px;color:#7fa8b8;letter-spacing:1px;margin-top:3px;}
+.setBtn{flex:none;min-width:64px;padding:8px 14px;border-radius:10px;font-family:inherit;font-size:13.5px;color:var(--cyan);
+  border:1px solid rgba(127,231,255,.4);background:rgba(24,52,74,.6);cursor:pointer;}
+.setBtn:active{background:rgba(127,231,255,.22);}
+.setBtn.on{color:#041318;background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 14px rgba(127,231,255,.45);}
+.setSeg{display:flex;flex:none;border-radius:10px;overflow:hidden;border:1px solid rgba(127,231,255,.35);}
+.setSeg button{padding:8px 12px;font-family:inherit;font-size:13px;color:var(--cyan);background:rgba(24,52,74,.5);border:none;cursor:pointer;}
+.setSeg button+button{border-left:1px solid rgba(127,231,255,.25);}
+.setSeg button.on{color:#041318;background:var(--cyan);}
+.padStatus{margin-top:14px;font-size:12.5px;color:#8fb4c6;letter-spacing:1px;padding:10px;border-radius:10px;background:rgba(10,22,34,.6);border:1px dashed rgba(127,231,255,.25);}
+.padStatus.live{color:var(--gold);border-color:rgba(255,210,127,.5);}
+.setHelp{margin-top:12px;text-align:left;font-size:12px;line-height:1.9;color:#9cc3d4;background:rgba(8,16,26,.6);border-radius:10px;padding:10px 14px;}
+.setHelp b{color:var(--cyan);font-weight:600;}
+#hud.sel-mode #choices{}
 #walkHud{position:fixed;left:0;right:0;top:0;z-index:3;max-width:720px;margin:0 auto;padding:10px 16px calc(env(safe-area-inset-top) + 8px);background:linear-gradient(180deg,rgba(2,4,9,.88),rgba(2,4,9,0));pointer-events:none;}
 #walkHud .whTop{display:flex;justify-content:space-between;align-items:center;pointer-events:auto;}
 #whName{font-size:14px;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 10px rgba(127,231,255,.5);}
@@ -130,8 +150,10 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
     <div id="hudTop">
       <span id="chapterTag">· 序章 ·</span>
       <div id="hudBtns">
-        <button class="hbtn" id="sndBtn" onclick="toggleSound()">🔊</button>
-        <button class="hbtn" onclick="go('!title')">☰</button>
+        <button class="hbtn" id="fsBtn" onclick="toggleFullscreen()" title="全屏">⛶</button>
+        <button class="hbtn" id="sndBtn" onclick="toggleSound()" title="声音">🔊</button>
+        <button class="hbtn" onclick="openSettings()" title="设置">⚙</button>
+        <button class="hbtn" onclick="go('!title')" title="返回标题">☰</button>
       </div>
     </div>
     <div id="bars">
@@ -191,6 +213,53 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
     <div id="cxTitle"></div>
     <div id="cxBody"></div>
     <button class="mbtn ghost" onclick="closeCodexEntry()">返回档案库</button>
+  </div>
+</div>
+<div class="overlay" id="setBox" style="display:none">
+  <div class="panel" style="max-height:88%;overflow-y:auto">
+    <div class="setTitle">⚙ 设 置</div>
+    <div class="setRow">
+      <div class="setLab">全屏模式<small>隐藏浏览器地址栏，沉浸式游玩</small></div>
+      <button class="setBtn" id="setFs" onclick="toggleFullscreen()">开启</button>
+    </div>
+    <div class="setRow">
+      <div class="setLab">音效与配乐<small>WebAudio 实时合成</small></div>
+      <button class="setBtn" id="setSnd" onclick="toggleSound();refreshSettings()">开</button>
+    </div>
+    <div class="setRow">
+      <div class="setLab">文字速度<small>剧情打字机速率</small></div>
+      <div class="setSeg" id="setSpeed">
+        <button onclick="setSpeed(1)">慢</button><button onclick="setSpeed(2)">中</button><button onclick="setSpeed(3)">快</button>
+      </div>
+    </div>
+    <div class="setRow">
+      <div class="setLab">画面品质<small>低配设备可降低 3D 精度</small></div>
+      <div class="setSeg" id="setQuality">
+        <button onclick="setQuality('low')">省电</button><button onclick="setQuality('high')">高清</button>
+      </div>
+    </div>
+    <div class="setRow">
+      <div class="setLab">屏幕震动<small>受击时的屏幕抖动反馈</small></div>
+      <button class="setBtn" id="setShake" onclick="toggleShake()">开</button>
+    </div>
+    <div class="setRow">
+      <div class="setLab">手柄震动<small>支持的手柄在战斗时会震动</small></div>
+      <button class="setBtn" id="setRumble" onclick="toggleRumble()">开</button>
+    </div>
+    <div id="padStatus" class="padStatus">🎮 未检测到手柄 · 连接后按任意键即可激活</div>
+    <div class="setHelp">
+      <b>手柄按键</b><br>
+      十字键 / 左摇杆 · 上下选择 · 左右调整<br>
+      Ⓐ 确认　Ⓑ 返回 / 关闭面板<br>
+      Ⓧ 全屏　Ⓨ 设置　LB/RB 切换面板<br>
+      步行场景：左摇杆移动　右摇杆环视
+    </div>
+    <div class="setHelp">
+      <b>键盘按键</b><br>
+      ↑↓ 选择　←→ 资源页切换　Enter 确认<br>
+      Esc 返回　F 全屏　M 静音　数字键 1-9 直接选
+    </div>
+    <button class="mbtn" onclick="closeSettings()">完成</button>
   </div>
 </div>
 <div class="overlay" id="endBox" style="display:none">
@@ -452,10 +521,10 @@ FX.burst=function(x,y,z,n,col,spd){for(let i=0;i<n;i++){const a=Math.random()*6.
   const s=spd*(0.4+Math.random()*0.8);
   this.spawn(x,y,z,Math.cos(a)*Math.cos(b)*s,Math.sin(b)*s*0.8+0.3,Math.sin(a)*Math.cos(b)*s,0.8+Math.random()*0.5,col,1.6);}};
 FX.fireBeam=function(){this.beams.push({x1:W*0.14,y1:H*0.84,x2:lastEnemy.x,y2:lastEnemy.y,t0:T,life:0.22});};
-FX.hitEnemy=function(){this.burst(0,0.4,-0.2,14,'rgba(255,210,140,',2.2);this.flashE=0.25;};
-FX.playerHit=function(){this.flash=0.5;};
-FX.shield=function(){this.rings.push({t0:T,life:0.55});};
-FX.explode=function(){this.burst(0,0.5,-0.2,40,'rgba(255,160,80,',3.4);this.burst(0,0.5,-0.2,20,'rgba(255,230,180,',2);this.flash=0.3;};
+FX.hitEnemy=function(){this.burst(0,0.4,-0.2,14,'rgba(255,210,140,',2.2);this.flashE=0.25;rumble(0.25,60);};
+FX.playerHit=function(){this.flash=0.5;screenShake(0.8);rumble(0.9,180);};
+FX.shield=function(){this.rings.push({t0:T,life:0.55});rumble(0.15,50);};
+FX.explode=function(){this.burst(0,0.5,-0.2,40,'rgba(255,160,80,',3.4);this.burst(0,0.5,-0.2,20,'rgba(255,230,180,',2);this.flash=0.3;screenShake(1);rumble(1,320);};
 function projP(x,y,z){const d=6-z;if(d<0.4)return null;const s=FOC/d;
   return [W/2+x*s,H*PROJY-y*s,s];}
 function drawFX(){
@@ -748,7 +817,7 @@ addEventListener('touchmove',function(e){if(!WALK||!TOUCH.on)return;e.preventDef
 addEventListener('touchend',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
 addEventListener('touchcancel',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
 function renderFrame(t){
-  T=t/1000;FOC=Math.min(W,H)*1.6;
+  T=t/1000;FOC=Math.min(W,H)*1.6*(CFG.quality==='low'?0.86:1);
   for(let i=0;i<3;i++)cur[i]+=(tgt[i]-cur[i])*.025;
   if(scene==='dream'||(WALK&&WALK.def.light==='day'))dreamSky();
   else{cx.fillStyle='rgb('+(cur[0]|0)+','+(cur[1]|0)+','+(cur[2]|0)+')';cx.fillRect(0,0,W,H);}
@@ -808,13 +877,177 @@ function updateHud(){
 function toggleSound(){AU.on=!AU.on;updateHud();
   if(AU.on){AU.init();AU.ui();MU.start(scene);}else MU.stop();}
 
+/* ================= 设置 / 全屏 / 适配 ================= */
+const SETK='deep_space_echoes_settings_v1';
+const CFG={speed:2,quality:'high',shake:true,rumble:true};
+(function loadCfg(){try{const o=JSON.parse(localStorage.getItem(SETK));if(o)Object.assign(CFG,o);}catch(e){}})();
+function saveCfg(){try{localStorage.setItem(SETK,JSON.stringify(CFG))}catch(e){}}
+function isFs(){return !!(document.fullscreenElement||document.webkitFullscreenElement);}
+function toggleFullscreen(){
+  AU.init();AU.ui();
+  if(isFs()){(document.exitFullscreen||document.webkitExitFullscreen||function(){}).call(document);}
+  else{const el=document.documentElement;
+    const fn=el.requestFullscreen||el.webkitRequestFullscreen||el.msRequestFullscreen;
+    if(fn){const p=fn.call(el);if(p&&p.catch)p.catch(()=>{showToast('这台设备不支持全屏，可尝试「添加到主屏幕」获得沉浸模式');});}
+    else showToast('这台设备不支持全屏，可尝试「添加到主屏幕」获得沉浸模式');}
+  setTimeout(refreshSettings,120);}
+function onFsChange(){
+  const on=isFs();
+  if(AU.on)AU.tone(on?880:520,.09,'sine',.035);
+  setTimeout(function(){W2=0;sizeSky();},80);
+  refreshSettings();}
+document.addEventListener('fullscreenchange',onFsChange);
+document.addEventListener('webkitfullscreenchange',onFsChange);
+/* 画质：低配降低像素比，提升帧率 */
+let W2=0;
+const _sizeSky=sizeSky;
+sizeSky=function(){_sizeSky();if(CFG.quality==='low'&&!isFs()===false){}};
+function setQuality(q){CFG.quality=q;saveCfg();refreshSettings();applyQuality();}
+function applyQuality(){const cv=$('#sky');
+  if(CFG.quality==='low'){cv.style.imageRendering='auto';FOC_CAP=0.85;}else{FOC_CAP=1;}
+  if(!isFs())sizeSky();}
+let FOC_CAP=1;
+function setSpeed(v){CFG.speed=v;saveCfg();refreshSettings();}
+function toggleShake(){CFG.shake=!CFG.shake;saveCfg();refreshSettings();}
+function toggleRumble(){CFG.rumble=!CFG.rumble;saveCfg();refreshSettings();refreshPadStatus();}
+function refreshSettings(){
+  const fs=$('#setFs');if(fs){fs.textContent=isFs()?'关闭':'开启';fs.classList.toggle('on',isFs());}
+  const sd=$('#setSnd');if(sd){sd.textContent=AU.on?'开':'关';sd.classList.toggle('on',AU.on);}
+  const sp=$('#setSpeed');
+  if(sp)[...sp.children].forEach((b,i)=>b.classList.toggle('on',i+1===CFG.speed));
+  const q=$('#setQuality');
+  if(q)[...q.children].forEach(b=>b.classList.toggle('on',b.textContent===(CFG.quality==='low'?'省电':'高清')));
+  const sh=$('#setShake');if(sh){sh.textContent=CFG.shake?'开':'关';sh.classList.toggle('on',CFG.shake);}
+  const rm=$('#setRumble');if(rm){rm.textContent=CFG.rumble?'开':'关';rm.classList.toggle('on',CFG.rumble);}
+  const fb=$('#fsBtn');if(fb)fb.textContent=isFs()?'⛉':'⛶';}
+function showToast(t){
+  let el=$('#toast');
+  if(!el){el=document.createElement('div');el.id='toast';el.className='toast';document.body.appendChild(el);}
+  el.textContent=t;el.classList.add('show');
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),2600);}
+function openSettings(){AU.init();AU.ui();refreshSettings();refreshPadStatus();$('#setBox').style.display='flex';PAD.menu=true;}
+function closeSettings(){$('#setBox').style.display='none';PAD.menu=false;}
+/* 手柄震动 */
+function rumble(strong,ms){if(!CFG.rumble||!PAD.index===null)return;
+  try{const gp=navigator.getGamepads?navigator.getGamepads()[PAD.index]:null;
+    if(gp&&gp.vibrationActuator&&gp.vibrationActuator.playEffect){
+      gp.vibrationActuator.playEffect('dual-rumble',{duration:ms||90,strongMagnitude:strong||0.6,weakMagnitude:0.35});}
+  }catch(e){}}
+/* 屏幕震动 */
+function screenShake(power){
+  if(!CFG.shake)return;
+  const app=$('#app');if(!app)return;
+  app.style.animation='none';void app.offsetWidth;
+  app.style.animation='shakeIt '+(power>0.6?260:170)+'ms ease';}
+const _st=document.createElement('style');
+_st.textContent='@keyframes shakeIt{0%,100%{transform:none}15%{transform:translate(-4px,2px)}35%{transform:translate(4px,-3px)}55%{transform:translate(-3px,-1px)}75%{transform:translate(2px,2px)}}.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 92px);transform:translateX(-50%) translateY(20px);z-index:60;max-width:88vw;padding:11px 18px;border-radius:12px;font-size:13.5px;color:#041318;background:var(--cyan);box-shadow:0 8px 30px rgba(127,231,255,.45);opacity:0;pointer-events:none;transition:opacity .25s,transform .25s;text-align:center}.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}';
+document.head.appendChild(_st);
+
+/* ================= 键盘 / 手柄导航 ================= */
+const PAD={index:null,menu:false,last:[],sel:0,prev:0,idleT:0};
+function focusables(){
+  const box=$('#setBox');
+  if(box&&box.style.display==='flex')return [...document.querySelectorAll('#setBox button')];
+  const cb=$('#codexBox');
+  if(cb&&cb.style.display==='flex')return [...document.querySelectorAll('#codexBox button')];
+  const eb=$('#endBox');
+  if(eb&&eb.style.display==='flex')return [...document.querySelectorAll('#endBox .mbtn')];
+  const bb=$('#battleBox');
+  if(bb&&bb.style.display==='block'){const bs=[...document.querySelectorAll('#bActs button, #bItems button')];return bs.filter(b=>!b.disabled);}
+  const tb=$('#titleBox');
+  if(tb&&tb.style.display==='flex'){
+    const all=[...document.querySelectorAll('#titleBox button')];
+    const vis=all.filter(b=>b.style.display!=='none'&&b.style.display!=='none');
+    return vis.length?vis:all.filter(b=>b.style.display!=='none');}
+  return [...document.querySelectorAll('#choices .choice')].filter(b=>!b.disabled);}
+function navMove(dir){
+  const list=focusables();if(!list.length)return;
+  list.forEach(b=>b.classList.remove('sel'));
+  PAD.sel=(PAD.sel+dir+list.length)%list.length;
+  const b=list[PAD.sel];b.classList.add('sel');
+  if(b.scrollIntoView)b.scrollIntoView({block:'nearest',behavior:'smooth'});
+  AU.ui();}
+function navConfirm(){
+  const list=focusables();if(!list.length)return;
+  const b=list[PAD.sel]||list[0];if(!b||b.disabled)return;
+  b.classList.add('sel');b.click();}
+function navBack(){
+  if($('#setBox').style.display==='flex'){closeSettings();return;}
+  if($('#codexBox').style.display==='flex'){closeCodexEntry();return;}
+  if($('#endBox').style.display==='flex'){showTitle();return;}
+  if($('#titleBox').style.display==='flex'){return;}
+  if(WALK){exitWalk();return;}
+  showTitle();}
+function resetNav(){PAD.sel=0;PAD.last=[];setTimeout(()=>{const l=focusables();if(l.length)l[0].classList.add('sel');},60);}
+/* ---- 键盘 ---- */
+addEventListener('keydown',function(e){
+  const k=e.key;
+  if(k==='f'||k==='F'){toggleFullscreen();e.preventDefault();return;}
+  if(k==='m'||k==='M'){toggleSound();e.preventDefault();return;}
+  if(k==='Escape'){
+    if(WALK){exitWalk();}else navBack();
+    e.preventDefault();return;}
+  if(k==='ArrowUp'||k==='w'||k==='W'){navMove(-1);e.preventDefault();return;}
+  if(k==='ArrowDown'||k==='s'||k==='S'){navMove(1);e.preventDefault();return;}
+  if(k==='ArrowLeft'||k==='ArrowRight'){navMove(k==='ArrowLeft'?-1:1);e.preventDefault();return;}
+  if(k==='Enter'||k===' '){
+    const t=($('#text')||{}).onclick;
+    if(typing&&t){t();e.preventDefault();return;}
+    navConfirm();e.preventDefault();return;}
+  if(/^[1-9]$/.test(k)){
+    const list=focusables();const i=+k-1;
+    if(list[i]){list[i].click();e.preventDefault();}
+    return;}
+},{passive:false});
+/* ---- 手柄 ---- */
+function padLoop(){
+  const pads=navigator.getGamepads?navigator.getGamepads():[];
+  let gp=null;
+  for(const p of pads){if(p&&p.connected){gp=p;break;}}
+  if(gp){
+    if(PAD.index!==gp.index){PAD.index=gp.index;refreshPadStatus();showToast('🎮 手柄已连接：'+(gp.id.split('(')[0]||'手柄'));}
+    const b=gp.buttons.map(x=>x.pressed?1:0);
+    const ax=gp.axes[0]||0,ay=gp.axes[1]||0;
+    const pressed=(i)=>b[i]===1&&PAD.last[i]!==1;
+    if(WALK){
+      /* 步行：左摇杆移动、右摇杆环视 */
+      if(gp.axes.length>=4){
+        const lx=gp.axes[0],ly=gp.axes[1],rx=gp.axes[2],ry=gp.axes[3];
+        if(Math.abs(ly)>0.18||Math.abs(lx)>0.18){WALK.pz+= -ly*0.09;WALK.px+=lx*0.06;}
+        if(Math.abs(rx)>0.18){WALK.angle+=rx*0.045;}
+      }
+      if(pressed(9)||pressed(1))exitWalk();
+      if(pressed(5))toggleFullscreen();
+    }else{
+      if(pressed(12))navMove(-1);
+      if(pressed(13))navMove(1);
+      if(pressed(0)){const t=($('#text')||{}).onclick;if(typing&&t)t();else navConfirm();}
+      if(pressed(1))navBack();
+      if(pressed(2))toggleFullscreen();
+      if(pressed(3)){const b2=$('#setBox');if(b2.style.display==='flex')closeSettings();else openSettings();}
+      if(pressed(4)){const box=$('#setBox');if(box.style.display==='flex'){navMove(-1);}}
+      if(pressed(5)){const box=$('#setBox');if(box.style.display==='flex'){navMove(1);}}
+      if(pressed(9))openSettings();
+    }
+    PAD.last=b;
+  }else if(PAD.index!==null){PAD.index=null;refreshPadStatus();}
+  requestAnimationFrame(padLoop);}
+function refreshPadStatus(){
+  const el=$('#padStatus');if(!el)return;
+  const pads=navigator.getGamepads?navigator.getGamepads():[];
+  let gp=null;for(const p of pads){if(p&&p.connected){gp=p;break;}}
+  if(gp){el.textContent='🎮 已连接：'+(gp.id.split('(')[0].trim().slice(0,42))+'　按键测试正常';el.classList.add('live');}
+  else{el.textContent='🎮 未检测到手柄 · 连接后按任意键即可激活';el.classList.remove('live');}}
+addEventListener('gamepadconnected',function(e){PAD.index=e.gamepad.index;refreshPadStatus();showToast('🎮 手柄已连接：'+(e.gamepad.id.split('(')[0]||'手柄'));});
+addEventListener('gamepaddisconnected',function(){PAD.index=null;refreshPadStatus();});
+
 /* ================= 打字机 ================= */
 let typing=null;
 function typeInto(el,text,cb){
   if(typing)clearInterval(typing);typing=null;
   let i=0,done=false;el.textContent='';
   const finish=()=>{if(done)return;done=true;if(typing)clearInterval(typing);typing=null;el.textContent=text;cb&&cb();};
-  typing=setInterval(()=>{i+=2;el.textContent=text.slice(0,i);AU.tick();
+  typing=setInterval(()=>{i+=CFG.speed===1?1:CFG.speed===3?4:2;el.textContent=text.slice(0,i);AU.tick();
     if(i>=text.length){clearInterval(typing);typing=null;finish();}},26);
   el.onclick=finish;}
 
@@ -852,7 +1085,7 @@ function showNode(id){
   let txt=n.text||'';
   if(n.alt)for(const a of n.alt)if(condOk(a.cond)){txt=a.text;break;}
   $('#choices').innerHTML='';
-  typeInto($('#text'),txt,()=>{renderChoices(n.choices||[]);showEcho(id);});}
+  typeInto($('#text'),txt,()=>{renderChoices(n.choices||[]);showEcho(id);resetNav();});}
 function renderChoices(list){
   const c=$('#choices');c.innerHTML='';
   list.forEach((ch,i)=>{
@@ -876,7 +1109,7 @@ function startBattle(n,id){
   setBG('danger');$('#chapterTag').textContent='· 战斗 ·';
   setBattleEnemy({battle_drone1:'drone',battle_memories:'memories',battle_guard:'guard'}[n.id]||'memories');
   bLog(n.intro||('遭遇 '+n.enemy.name+'！'));AU.warn();
-  drawBattle();}
+  drawBattle();resetNav();}
 function bLog(m){const el=$('#bLog');
   el.innerHTML='<b>▸ '+m.replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</b><br>'+el.innerHTML;}
 function useItem(k){
@@ -1003,6 +1236,7 @@ function showEnding(id){
   else{$('#recapBox').style.display='none';$('#copyBtn').style.display='none';S._share='';}
   $('#cardBox').style.display='none';
   $('#cardBtn').textContent='🖼 生成分享卡';
+  resetNav();
   AU.tone(n.rank==='C'?160:660,.8,'sine',.05);}
 /* ================= 回声模式（二周目） ================= */
 const ECHOK='deep_space_echoes_echo_v1';
@@ -1114,7 +1348,8 @@ function showTitle(){
   const n=Object.keys(getChapters()).length;
   $('#chBtn').style.display=n>1?'block':'none';
   const tot=JSON.parse((function(){try{return localStorage.getItem(TOTK)||'{"t":0,"r":0}'}catch(e){return'{"t":0,"r":0}'}})());
-  $('#totalStats').textContent=tot.r>0?('已航行 '+tot.r+' 次 · 累计 '+Math.floor(tot.t/60)+' 分钟'):'尚未出航，星空在等它的第一位船长';}
+  $('#totalStats').textContent=tot.r>0?('已航行 '+tot.r+' 次 · 累计 '+Math.floor(tot.t/60)+' 分钟'):'尚未出航，星空在等它的第一位船长';
+  resetNav();}
 function newGame(){
   AU.init();AU.ui();
   S.o2=100;S.en=60;S.hp=100;S.flags={};S.items={o2can:1,bat:1};S.log=[];S.stats={t0:Date.now(),nodes:0,battles:0,items:0};S.lastBattle=null;S.battleRetreat=null;S.node='p0_signal';
@@ -1477,8 +1712,10 @@ choices:[{t:'返回标题',to:'!title'}]}
 };
 /* ================= 启动 ================= */
 addEventListener('resize',sizeSky);
-sizeSky();buildAll();
+sizeSky();buildAll();applyQuality();
 requestAnimationFrame(renderFrame);
+requestAnimationFrame(padLoop);
+refreshSettings();
 AU.on=true;updateHud();
 showTitle();
 </script>
