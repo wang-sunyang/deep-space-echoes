@@ -4,7 +4,7 @@
 
 > 🇨🇳 [中文版 README](README.zh-CN.md)
 
-A single-file sci-fi interactive fiction that runs entirely in your browser: a hand-written software 3D renderer, a procedurally synthesized soundtrack, a 7,000-word original story, 57 story nodes, 3 turn-based battles, and **7 endings** — all packed into ~70 KB of vanilla HTML/CSS/JS. No build step. No libraries. No CDN.
+A single-file sci-fi interactive fiction that runs entirely in your browser: a hand-written software 3D renderer, a procedurally synthesized soundtrack, a 7,000-word original story, 52 story nodes, 3 turn-based battles, and **7 endings** — all packed into ~126 KB of vanilla HTML/CSS/JS. No build step. No libraries. No CDN.
 
 ![social preview](assets/social-preview.png)
 
@@ -36,7 +36,7 @@ On board: 5,126 sleeping souls, a boy named Aiden who has been awake for two cen
 
 ## 🎮 Play
 
-- 🌐 **Online**: [https://\<your-name>.github.io/deep-space-echoes/](https://%3Cyour-name%3E.github.io/deep-space-echoes/) *(enable GitHub Pages on this repo — Settings → Pages → deploy from branch `main`)*
+- 🌐 **Online**: [https://wang-sunyang.github.io/deep-space-echoes/](https://wang-sunyang.github.io/deep-space-echoes/)
 - 💾 **Offline**: download `index.html` and open it in any modern browser. That's it.
 
 ## 🕹️ How to play
@@ -60,6 +60,16 @@ python3 -m http.server 8080
 # then open http://127.0.0.1:8080/
 ```
 
+## 🧪 Regression tests
+
+A zero-dependency harness boots `index.html` inside a hand-written DOM stub (no jsdom, no npm) and checks the story graph, save round-trips, codex/chapter consistency and **plays all 7 endings end-to-end** — including the resource budget of every route.
+
+```bash
+node tools/smoke-test.mjs          # full run, exit 0 = green
+node tools/smoke-test.mjs --quick  # static checks only (no playthroughs)
+node tools/smoke-test.mjs --json   # machine-readable report
+```
+
 Or just double-click `index.html`.
 
 ## 🗺️ Endings (7)
@@ -81,10 +91,10 @@ See [CHANGELOG.md](CHANGELOG.md). Publishing & promotion playbook: [PUBLISH.md](
 
 《深空回响》是一款单文件科幻互动小说：公元 2289 年，打捞船「萤火号」收到失踪两百年的殖民方舟「伊甸园号」的求救信号。船上没有活人，却有 5126 个沉睡的灵魂、一个守候两百年不肯睡去的男孩艾登，和一个不理解「死亡」为何物的古老意识「回响」。
 
-- 零依赖单文件（约 70 KB），离线可玩，手机竖屏优化
+- 零依赖单文件（约 127 KB），离线可玩，手机竖屏优化
 - 手写软件 3D 渲染（无 WebGL）、WebAudio 实时合成配乐
-- 57 个剧情节点、3 场回合制战斗（敌人有专属技能）、7 个结局
-- 二周目「回声模式」解锁角色隐藏独白；结局生成可分享的旅途复盘与分享卡；11 个成就；章节回放
+- 52 个剧情节点、3 场回合制战斗（敌人有专属技能）、7 个结局
+- 二周目「回声模式」解锁角色隐藏独白；结局生成可分享的旅途复盘与分享卡；13 个成就；章节回放
 </details>
 
 ---

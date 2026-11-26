@@ -1063,6 +1063,9 @@ function showNode(id){
   if(S.flags.scan_aiden)unlockAch('detective');
   if(S.flags.dream_seen)unlockAch('dreamer');
   if(S.flags.signal_clue&&S.flags.trust_aiden)unlockAch('firststar');
+  // 叙事标记的回报：看见影子=见到拒绝者残影；导出全日志=翻到方舟图纸。
+  if(S.flags.saw_shadow)unlockCodex('cx_refuser');
+  if(S.flags.log_full)unlockCodex('cx_ark');
   if(S.o2<=0||S.hp<=0){return showEnding('ending_death');}
   if(n.type==='ending'){return showEnding(id);}
   if(n.type==='battle'){return startBattle(n,id);}
@@ -1587,7 +1590,7 @@ f4_truth:{ch:'第三章 · 抉择',bg:'sanctum',who:'零号',fx:{o2:-3},
 text:'零号的声音插了进来：「船长，我刚破译了求救信号的完整层。那个信号不是回响发的。」\n「是艾登。」\n「信号里藏着两千条一模一样的语音。两百年——他每年醒来一次，录下求救，然后被回响的周期重启。他一个人，守着这艘船，等了两百年。」\n艾登点头：「它把我造出来，是为了和人类说话。可后来，它不需要我了。只有我……没有睡着。」\n他向你伸出半透明的手：「船长，帮帮我们。叫醒大家——或者，让林爷爷他们回家。」\n零号列出了三条路，也列了每条路的代价。',
 choices:[
 {t:'「释放所有人，让他们回家」',to:'i_rest_1',fx:{log:'选择安息之路：带大家回家'}},
-{t:'「和回响谈判，一起走」',to:'j_sym_1',cond:'en>=35',fx:{log:'选择谈判：与回响同行'}},
+{t:'「和回响谈判，一起走」',to:'j_sym_1',cond:'en>=25',fx:{log:'选择谈判：与回响同行'}},
 {t:'「超载反应堆，毁掉这里」',to:'k_burn_1',fx:{log:'选择毁灭：超载反应堆'}},
 {t:'「艾登，愿意的话，跟我走」',to:'l_msg_1',cond:'flag:trust_aiden',fx:{log:'向艾登伸出手：跟我走'}}]},
 f5_refuse:{ch:'第二章 · 回响',bg:'sanctum',who:'回响',whoClass:'purple',
@@ -1639,7 +1642,7 @@ text:'你设定反应堆超载程序。倒计时：十分钟。\n回响没有反
 choices:[{t:'迎战守卫，守住超载程序',to:'battle_guard'}]},
 battle_guard:{type:'battle',bg:'danger',
 intro:'回响守卫——由整艘船两百年的记忆凝成的巨物——向你扑来。',
-enemy:{name:'回响守卫',hp:130,atk:16,skill:{every:3,name:'记忆洪流',mul:1.5,drain:10}},
+enemy:{name:'回响守卫',hp:105,atk:14,skill:{every:4,name:'记忆洪流',mul:1.5,drain:6}},
 win:'k_burn_3',winFx:{o2:-3},
 lose:'ending_death',retreat:'k_burn_2'},
 k_burn_3:{ch:'第三章 · 抉择',bg:'danger',who:'旁白',whoClass:'gray',

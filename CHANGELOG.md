@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.9 — 2026-11-26 — Balance pass & regression harness
+- **结局可达性修复**：第三章「谈判」需要 `en>=35`，但任何一条极限路线的能量上限只有 31，该结局实际锁死 → 门槛调至 25
+- **最终战平衡**：「回响守卫」130 HP / 16 ATK / 每 3 回合吸能 10，在最优路线下也会弹尽必败 → 105 HP / 14 ATK / 每 4 回合吸能 6
+- **叙事标记回报**：`saw_shadow` 解锁「拒绝者」词条、`log_full` 解锁「方舟」词条（此前只写不读）
+- **零依赖回归测试** `tools/smoke-test.mjs`：内置 DOM/Audio/Canvas 桩，47 项检查，含 7 个结局的真实通关（资源感知路线规划 + 自动战斗）
+- 修正 README：剧情节点 52（原 57）、体积 ~127 KB（原 70/87 KB）、真实 Pages 链接、成就 13（原 11）
+
 ## v1.0 — 2026-11-19 — First release
 - 7,000-word original sci-fi story, 57 story nodes, 7 endings
 - Resource system (O₂ / EN / HP), flags & conditional choices
