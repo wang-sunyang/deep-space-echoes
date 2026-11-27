@@ -15,10 +15,10 @@
 <style>
 :root{--cyan:#7fe7ff;--cyan2:#3fa8c9;--dim:#33506b;--warn:#ff6b6b;--gold:#ffd27f;--txt:#d7ecf5;}
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-html,body{height:100%;}
+html,body{height:100%;height:100dvh;}
 body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC","Noto Sans SC","Microsoft YaHei",sans-serif;overflow:hidden;}
-#sky{position:fixed;inset:0;z-index:0;}
-#app{position:relative;z-index:1;height:100%;max-width:720px;margin:0 auto;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);}
+#sky{position:fixed;inset:0;width:100%;height:100%;z-index:0;}
+#app{position:relative;z-index:1;height:100%;height:100dvh;max-width:720px;margin:0 auto;display:flex;flex-direction:column;padding:env(safe-area-inset-top) 14px env(safe-area-inset-bottom);}
 
 /* ---------- HUD ---------- */
 #hud{display:none;padding:8px 4px 6px;border-bottom:1px solid rgba(127,231,255,.18);}
@@ -32,9 +32,6 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
   border:1px solid rgba(255,150,150,.45);background:rgba(60,20,25,.45);color:#ffb3b3;cursor:pointer;}
 #bHint{font-size:12px;color:#ffd08a;margin-top:8px;min-height:16px;text-align:center;line-height:1.5;}
 #bRetreat.warn{border-color:#ff6b6b;background:rgba(120,25,30,.75);color:#fff;}
-#whEnter{margin-top:6px;min-height:44px;padding:0 14px;border-radius:10px;font-size:14px;
-  border:1px solid rgba(127,231,255,.55);background:rgba(20,60,80,.7);color:var(--cyan);cursor:pointer;}
-#whEnter:active{background:rgba(127,231,255,.3);}
 #bars{display:flex;flex-direction:column;gap:4px;}
 .bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#9cc3d4;}
 .bar .lab{width:34px;letter-spacing:1px;flex:none;}
@@ -72,7 +69,7 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 #bEnemy .nm{font-size:15px;letter-spacing:3px;color:var(--warn);text-shadow:0 0 10px rgba(255,107,107,.5);}
 .bhp{height:12px;border-radius:6px;background:rgba(255,255,255,.07);border:1px solid rgba(255,107,107,.35);margin-top:7px;overflow:hidden;}
 .bhp .fill{background:linear-gradient(90deg,#b33,#ff6b6b);height:100%;}
-#bLog{margin:14px 2px;font-size:13px;line-height:1.8;color:#9cc3d4;min-height:78px;white-space:pre-wrap;}
+#bLog{margin:14px 2px;font-size:13px;line-height:1.8;color:#9cc3d4;min-height:78px;max-height:32vh;overflow-y:auto;-webkit-overflow-scrolling:touch;white-space:pre-wrap;}
 #bLog b{color:var(--txt);}
 #bActs{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
 #bItems{display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-top:9px;}
@@ -84,8 +81,11 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 .bact small{display:block;font-size:10.5px;color:#7fa8b8;margin-top:3px;letter-spacing:1px;}
 
 /* ---------- title / ending ---------- */
-.overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(2,4,9,.55);backdrop-filter:blur(2px);}
-.panel{width:100%;max-width:430px;text-align:center;animation:rise .6s ease;}
+/* align-items:flex-start + 面板 margin:auto：内容不足时居中，超出小屏时可滚动且顶部不被裁掉 */
+.overlay{position:fixed;inset:0;z-index:5;display:flex;align-items:flex-start;justify-content:center;padding:calc(env(safe-area-inset-top) + 16px) 20px calc(env(safe-area-inset-bottom) + 16px);
+  overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y;
+  background:rgba(2,4,9,.55);backdrop-filter:blur(2px);}
+.panel{width:100%;max-width:430px;text-align:center;margin:auto 0;animation:rise .6s ease;}
 #gameTitle{font-size:38px;letter-spacing:10px;color:#e8fbff;text-shadow:0 0 24px rgba(127,231,255,.75),0 0 60px rgba(127,231,255,.35);margin-bottom:6px;}
 #gameSub{font-size:12px;letter-spacing:5px;color:var(--cyan2);margin-bottom:34px;}
 .mbtn{display:block;width:100%;margin:10px 0;padding:15px;font-size:16px;letter-spacing:4px;border-radius:14px;font-family:inherit;color:var(--txt);cursor:pointer;
@@ -146,11 +146,22 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 .setHelp{margin-top:12px;text-align:left;font-size:12px;line-height:1.9;color:#9cc3d4;background:rgba(8,16,26,.6);border-radius:10px;padding:10px 14px;}
 .setHelp b{color:var(--cyan);font-weight:600;}
 #hud.sel-mode #choices{}
-#walkHud{position:fixed;left:0;right:0;top:0;z-index:3;max-width:720px;margin:0 auto;padding:10px 16px calc(env(safe-area-inset-top) + 8px);background:linear-gradient(180deg,rgba(2,4,9,.88),rgba(2,4,9,0));pointer-events:none;}
-#walkHud .whTop{display:flex;justify-content:space-between;align-items:center;pointer-events:auto;}
+/* 步行 HUD 贴底：避开状态栏与顶部资源 HUD，同时把「进入」按钮放到拇指区 */
+#walkHud{position:fixed;left:0;right:0;bottom:0;z-index:3;max-width:720px;margin:0 auto;
+  padding:10px 16px calc(env(safe-area-inset-bottom) + 10px);
+  background:linear-gradient(0deg,rgba(2,4,9,.94) 0%,rgba(2,4,9,.78) 55%,rgba(2,4,9,0) 100%);pointer-events:none;}
+#walkHud .whTop{display:flex;justify-content:space-between;align-items:center;gap:10px;pointer-events:auto;}
 #whName{font-size:14px;letter-spacing:3px;color:var(--cyan);text-shadow:0 0 10px rgba(127,231,255,.5);}
-#whTip{font-size:11.5px;color:#9cc3d4;letter-spacing:1px;margin-top:6px;opacity:.85;}
+#whTip{font-size:11.5px;color:#9cc3d4;letter-spacing:1px;margin-top:6px;opacity:.85;line-height:1.6;}
 #whMsg{margin-top:8px;font-size:12.5px;color:var(--warn);letter-spacing:1px;animation:blink 1s infinite;}
+#whEnter{display:none;width:100%;margin:10px 0 0;min-height:50px;padding:0 14px;border-radius:12px;font-size:15px;letter-spacing:2px;
+  font-family:inherit;align-items:center;justify-content:center;
+  border:1px solid rgba(127,231,255,.55);background:rgba(20,60,80,.85);color:var(--cyan);cursor:pointer;
+  box-shadow:0 6px 22px rgba(0,0,0,.45);pointer-events:auto;}
+#whEnter:active{background:rgba(127,231,255,.3);}
+/* 步行时正文层不再压半透明渐变，3D 场景可见 */
+#stage.walking{background:none;overflow:hidden;padding-top:0;padding-bottom:0;}
+#stage.walking #speaker,#stage.walking #text,#stage.walking #choices,#stage.walking #echo,#stage.walking #battleBox{display:none;}
 @media (min-width:640px){#text{font-size:18px;}#gameTitle{font-size:52px;}}
 
 /* ================= 无障碍与触控 ================= */
@@ -371,9 +382,17 @@ MU.tick=function(){
 const cv=$('#sky'),cx=cv.getContext('2d');
 let W=0,H=0,T=0,FOC=624;
 function sizeSky(){const dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
-  W=innerWidth;H=innerHeight;
+  /* 以 canvas 实际显示尺寸为基准（CSS 决定），避免 iOS 地址栏收放时投影与画面错位。
+     任取值为 0 时必须回退而不是直接 return——W/H 保持 0 会让 FOC 归零、投影全成 NaN，
+     表现为「进走廊后一片纯色、怎么拖都没反应」 */
+  const vv=window.visualViewport;
+  let w=Math.round(cv.clientWidth||(vv?vv.width:0)||innerWidth||0);
+  let h=Math.round(cv.clientHeight||(vv?vv.height:0)||innerHeight||0);
+  if(!w)w=Math.round(innerWidth||document.documentElement.clientWidth||360);
+  if(!h)h=Math.round(innerHeight||document.documentElement.clientHeight||640);
+  if(!w||!h)return;
+  W=w;H=h;
   cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
-  cv.style.width=W+'px';cv.style.height=H+'px';
   cx.setTransform(dpr,0,0,dpr,0,0);}
 const BG={space:[4,7,15],ship:[11,13,19],station:[17,12,23],sanctum:[21,9,27],dream:[26,15,9],danger:[23,5,6],void:[2,2,4],walk:[6,7,14]};
 let cur=[4,7,15],tgt=[4,7,15],scene='space',enemyKey=null,lastEnemy={x:0,y:0};
@@ -518,10 +537,11 @@ function renderMesh(mesh,opt){
   const cam=opt.cam||null;
   xformVerts(m,out);
   if(cam){
-    const cy=Math.cos(-cam.ay),sy=Math.sin(-cam.ay);
+    const cy=Math.cos(-cam.ay),sy=Math.sin(-cam.ay),ey=cam.y||0;
     for(let i=0;i<m.verts.length;i+=3){
       const x=out[i]-cam.x,z=out[i+2]-cam.z;
-      out[i]=x*cy+z*sy;out[i+2]=-x*sy+z*cy;}}
+      out[i]=x*cy+z*sy;out[i+2]=-x*sy+z*cy;
+      if(ey)out[i+1]-=ey;}}
   cx.globalAlpha=alpha;
   const camZ=6,list=[];
   for(let fi=0;fi<m.faces.length;fi++){
@@ -534,12 +554,36 @@ function renderMesh(mesh,opt){
     if(m.cull!==false){
       const mx=(ax+bx+gx)/3-(cam?cam.x:0),my=(ay+by+gy)/3,mz=(az+bz+gz)/3-(cam?cam.z:0);
       if(nx*mx+ny*my+nz*(mz-(cam?0:camZ))>=0)continue;}
-    const d1=cam?az:(camZ-az),d2=cam?bz:(camZ-bz),d3=cam?gz:(camZ-gz);
-    if(d1<0.4||d2<0.4||d3<0.4)continue;
-    const s1=F/d1,s2=F/d2,s3=F/d3;
     let k=0.5;
     const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
     k+=0.5*Math.max(0,(nx*0.42+ny*0.62+nz*0.66)/nl);
+    if(!cam){
+      const d1=camZ-az,d2=camZ-bz,d3=camZ-gz;
+      if(d1<0.4||d2<0.4||d3<0.4)continue;
+      const s1=F/d1,s2=F/d2,s3=F/d3;
+      list.push({z:(az+bz+gz)/3,
+        p1x:W/2+ax*s1,p1y:H*PROJY-ay*s1,
+        p2x:W/2+bx*s2,p2y:H*PROJY-by*s2,
+        p3x:W/2+gx*s3,p3y:H*PROJY-gy*s3,f,k});
+      continue;}
+    /* 近平面裁剪：只要有一个顶点在相机后方就整片丢弃，会让「贴着墙走」时
+       墙面缺掉整段、地板露出天窗。这里按 z>=NZ 做一次 Sutherland-Hodgman 裁剪 */
+    const NZ=0.3;
+    if(az<NZ||bz<NZ||gz<NZ){
+      if(az<NZ&&bz<NZ&&gz<NZ)continue;
+      const src=[[ax,ay,az],[bx,by,bz],[gx,gy,gz]],poly=[];
+      for(let vi=0;vi<3;vi++){const pa=src[vi],pb=src[(vi+1)%3],ai=pa[2]>=NZ,bi=pb[2]>=NZ;
+        if(ai)poly.push(pa);
+        if(ai!==bi){const t=(NZ-pa[2])/(pb[2]-pa[2]);
+          poly.push([pa[0]+(pb[0]-pa[0])*t,pa[1]+(pb[1]-pa[1])*t,NZ]);}}
+      for(let vi=1;vi+1<poly.length;vi++){const A=poly[0],B=poly[vi],Cc=poly[vi+1];
+        const sA=F/A[2],sB=F/B[2],sC=F/Cc[2];
+        list.push({z:(A[2]+B[2]+Cc[2])/3,
+          p1x:W/2+A[0]*sA,p1y:H*PROJY-A[1]*sA,
+          p2x:W/2+B[0]*sB,p2y:H*PROJY-B[1]*sB,
+          p3x:W/2+Cc[0]*sC,p3y:H*PROJY-Cc[1]*sC,f,k});}
+      continue;}
+    const s1=F/az,s2=F/bz,s3=F/gz;
     list.push({z:(az+bz+gz)/3,
       p1x:W/2+ax*s1,p1y:H*PROJY-ay*s1,
       p2x:W/2+bx*s2,p2y:H*PROJY-by*s2,
@@ -685,12 +729,16 @@ function dreamSky(){
   sg.addColorStop(0,'rgba(255,214,150,0.95)');sg.addColorStop(0.35,'rgba(255,170,90,0.7)');sg.addColorStop(1,'rgba(255,170,90,0)');
   cx.fillStyle=sg;cx.beginPath();cx.arc(W*0.66,H*0.34,H*0.14,0,6.29);cx.fill();}
 function vignette(){
-  let g=cx.createLinearGradient(0,0,0,H*0.16);
-  g.addColorStop(0,'rgba(1,3,8,0.55)');g.addColorStop(1,'rgba(1,3,8,0)');
-  cx.fillStyle=g;cx.fillRect(0,0,W,H*0.16);
-  g=cx.createLinearGradient(0,H,0,H*0.72);
-  g.addColorStop(0,'rgba(1,3,8,0.82)');g.addColorStop(1,'rgba(1,3,8,0)');
-  cx.fillStyle=g;cx.fillRect(0,H*0.72,W,H*0.28);
+  /* 步行模式是玩家自己在走的场景，底部压暗会直接盖掉近处地面与门前提示，
+     这里只保留两侧与顶部的轻压暗，避免「下半屏一片黑」 */
+  const wk=!!WALK;
+  let g=cx.createLinearGradient(0,0,0,H*(wk?0.10:0.16));
+  g.addColorStop(0,'rgba(1,3,8,'+(wk?0.34:0.55)+')');g.addColorStop(1,'rgba(1,3,8,0)');
+  cx.fillStyle=g;cx.fillRect(0,0,W,H*(wk?0.10:0.16));
+  if(!wk){
+    g=cx.createLinearGradient(0,H,0,H*0.72);
+    g.addColorStop(0,'rgba(1,3,8,0.82)');g.addColorStop(1,'rgba(1,3,8,0)');
+    cx.fillStyle=g;cx.fillRect(0,H*0.72,W,H*0.28);}
   g=cx.createLinearGradient(0,0,W*0.07,0);
   g.addColorStop(0,'rgba(1,3,8,0.4)');g.addColorStop(1,'rgba(1,3,8,0)');
   cx.fillStyle=g;cx.fillRect(0,0,W*0.07,H);
@@ -700,18 +748,19 @@ function vignette(){
 /* ================= 可操作步行模式 ================= */
 const WALKX={};
 const WALKDEF={
-corridor:{name:'伊甸园号 · 主廊道',tip:'左半屏拖动：移动　右半屏拖动：环视　走向一扇门',len:14,w:2.8,h:2.3,light:'dim',
+corridor:{name:'伊甸园号 · 主廊道',tip:'左半屏上滑：前进　右半屏左右拖动：环视　走到门前点「进入」',len:14,w:2.8,h:2.3,light:'dim',eye:1.55,
   gates:[
    {z:3,side:'L',label:'舰桥',node:'b1_bridge'},
    {z:6,side:'R',label:'居住区',node:'b1_habitat'},
    {z:9,side:'L',label:'反应堆舱',node:'b1_reactor'},
    {z:13,side:'F',label:'中央城区',node:'a1_hub',need:'flag:vb,flag:vh,flag:vr',lock:'这扇门锁着——先探索舰桥、居住区与反应堆'}]},
-chase:{name:'幽暗走廊',tip:'追上那个人影',len:20,w:2.4,h:2.2,light:'dark',special:'chase',end:{z:19,node:'b1_chase'}},
-gate:{name:'圣坛之路',tip:'走向圣坛舱大门',len:16,w:3.0,h:2.8,light:'dim',special:'gate',end:{z:15,node:'battle_memories'}},
-dream:{name:'黄昏 · 海边小镇',tip:'走向码头上的外公',len:12,w:4.2,h:0,light:'day',special:'sea',end:{z:10.5,node:'g_dream_1'}},
-leave:{name:'最后的门',tip:'走向气闸——别回头',len:14,w:2.6,h:2.3,light:'leave',special:'leave',end:{z:13,node:'ending_refuse'}}};
+chase:{name:'幽暗走廊',tip:'左半屏上滑：前进　追上那个人影',len:20,w:2.4,h:2.2,light:'dark',special:'chase',eye:1.5,end:{z:19,node:'b1_chase'}},
+gate:{name:'圣坛之路',tip:'左半屏上滑：前进　走向圣坛舱大门',len:16,w:3.0,h:2.8,light:'dim',special:'gate',eye:1.65,end:{z:15,node:'battle_memories'}},
+/* 海边场景以视平线 1.6m 为基准，海面/码头/外公均按世界高度下沉，避免画面上半屏空、下半屏糊成一片 */
+dream:{name:'黄昏 · 海边小镇',tip:'左半屏上滑：前进　走向码头上的外公',len:12,w:4.2,h:0,light:'day',special:'sea',eye:1.6,end:{z:10.5,node:'g_dream_1'}},
+leave:{name:'最后的门',tip:'左半屏上滑：前进　走向气闸——别回头',len:14,w:2.6,h:2.3,light:'leave',special:'leave',eye:1.5,end:{z:13,node:'ending_refuse'}}};
 let WALK=null;
-const TOUCH={on:false,side:'L',lx:0,ly:0,ddx:0,ddy:0};
+const TOUCH={on:false,side:'L',lx:0,ly:0,ddx:0,ddy:0,id:-1};
 function buildWalkMesh(def){
   const verts=[],faces=[],w=def.w,h=def.h;
   const addQuad=(a,b,c,d,col,e,ph)=>{
@@ -729,23 +778,23 @@ function buildWalkMesh(def){
     addQuad([w/2,0,z0],[w/2,h,z0],[w/2,h,z1],[w/2,0,z1],wc);
     addQuad([-w/2,0,z0],[-w/2,0,z1],[w/2,0,z1],[w/2,0,z0],floorC);
     if(h>0)addQuad([-w/2,h,z0],[-w/2,h,z1],[w/2,h,z1],[w/2,h,z0],ceilC);}
+  /* 灯具/门板比共面高 1~2cm，避免与天花、墙面同深度打架造成闪面 */
+  const hy=h-0.02;
   if(def.light==='dim'){for(let i=0;i<def.len;i+=2)
-    addQuad([-0.12,h,i],[0.12,h,i],[0.12,h,Math.min(def.len,i+1.6)],[-0.12,h,Math.min(def.len,i+1.6)],[140,220,255],1,i);}
+    addQuad([-0.12,hy,i],[0.12,hy,i],[0.12,hy,Math.min(def.len,i+1.6)],[-0.12,hy,Math.min(def.len,i+1.6)],[140,220,255],1,i);}
   if(def.light==='dark'){for(let i=0;i<def.len;i+=3)
-    addQuad([-0.1,h,i],[0.1,h,i],[0.1,h,i+0.8],[-0.1,h,i+0.8],[200,70,70],1,i*2.7);}
+    addQuad([-0.1,hy,i],[0.1,hy,i],[0.1,hy,i+0.8],[-0.1,hy,i+0.8],[200,70,70],1,i*2.7);}
   if(def.light==='leave'){for(let i=1;i<def.len;i+=3)
     addQuad([w/2-0.06,1.55,i],[w/2-0.06,1.68,i],[w/2-0.06,1.68,i+0.5],[w/2-0.06,1.55,i+0.5],[210,70,70],1,i*3.1);}
   for(const g of def.gates||[]){
     const z0=g.z-0.4,z1=g.z+0.4,ph=g.z;
     const gc=g.side==='F'?[255,200,120]:[90,210,255];
-    if(g.side==='L'){
-      addQuad([-w/2,0.1,z0],[-w/2,2.0,z0],[-w/2,2.0,z1],[-w/2,0.1,z1],gc,1,ph);
-      addQuad([-w/2,2.0,z0],[-w/2,2.2,z0],[-w/2,2.2,z1],[-w/2,2.0,z1],[200,240,255],1,ph);}
-    else if(g.side==='R'){
-      addQuad([w/2,0.1,z0],[w/2,2.0,z0],[w/2,2.0,z1],[w/2,0.1,z1],gc,1,ph);
-      addQuad([w/2,2.0,z0],[w/2,2.2,z0],[w/2,2.2,z1],[w/2,2.0,z1],[200,240,255],1,ph);}
+    if(g.side==='L'||g.side==='R'){
+      const gx=(g.side==='L'?-1:1)*(w/2-0.012);
+      addQuad([gx,0.1,z0],[gx,2.0,z0],[gx,2.0,z1],[gx,0.1,z1],gc,1,ph);
+      addQuad([gx,2.0,z0],[gx,2.2,z0],[gx,2.2,z1],[gx,2.0,z1],[200,240,255],1,ph);}
     else{
-      addQuad([-1.1,0.1,g.z],[1.1,0.1,g.z],[1.1,2.3,g.z],[-1.1,2.3,g.z],gc,1,ph);}}
+      addQuad([-1.1,0.1,g.z-0.012],[1.1,0.1,g.z-0.012],[1.1,2.3,g.z-0.012],[-1.1,2.3,g.z-0.012],gc,1,ph);}}
   addQuad([-w/2,0,def.len],[w/2,0,def.len],[w/2,h,def.len],[-w/2,h,def.len],wallC);
   if(def.light==='leave'){
     addQuad([-1.1,0.1,def.len],[1.1,0.1,def.len],[1.1,2.2,def.len],[-1.1,2.2,def.len],[150,240,220],1,1);
@@ -757,7 +806,8 @@ function projCam(x,y,z,w){
   const cx2=rx*cy+rz*sy,cz2=-rx*sy+rz*cy;
   if(cz2<0.4)return null;
   const s=FOC/cz2;
-  return [W/2+cx2*s,H*PROJY-y*s,s];}
+  /* y 为世界高度，需减去视点高度再投影，否则地面/墙面全部贴在视平线上 */
+  return [W/2+cx2*s,H*PROJY-(y-(w.eye||0))*s,s];}
 let walkMsgTimer=null;
 function showWalkMsg(t){
   const el=$('#whMsg');el.textContent=t;el.style.display='block';
@@ -767,27 +817,47 @@ function startWalk(id){
   const d=WALKDEF[id];if(!d)return;
   AU.init();
   if(WALK&&WALK.def!==d)WALK=null;
-  if(!WALK)WALK={def:d,mesh:buildWalkMesh(d),px:0,pz:0.5,angle:0,back:S.node};
+  /* eye 必须挂在 WALK 上：投影函数 projCam 与门牌/光点标注都读 w.eye，
+     落到 def.eye 以外的字段会让标注与 3D 几何错位一整层楼高 */
+  if(!WALK)WALK={def:d,mesh:buildWalkMesh(d),px:0,pz:0.5,angle:0,eye:d.eye||0,back:S.node};
   WALK.ask=null;
   PROJY=0.45;
   $('#text').style.display='none';$('#choices').style.display='none';
   $('#battleBox').style.display='none';$('#echo').style.display='none';
+  $('#stage').classList.add('walking');
+  const wb=$('#whEnter');if(wb)wb.style.display='none';
   $('#hud').style.display='block';
   $('#walkHud').style.display='block';
   $('#whName').textContent='▸ '+d.name;
   $('#whTip').textContent=d.tip;
   $('#whMsg').style.display='none';
+  const st=$('#stage');if(st)st.scrollTop=0;
+  sizeSky();
   setBG('walk');
-  document.body.style.touchAction='none';
+  walkTouch(true);
   save();}
+/* 只在画面层禁用浏览器手势：body 上设 none 会连带冻结设置/档案等遮罩层的滚动 */
+function walkTouch(on){
+  const els=['#sky','#app'];
+  for(const sel of els){const el=$(sel);if(el)el.style.touchAction=on?'none':'';}}
 function stopWalk(){
   if(!WALK)return;
   PROJY=0.30;
   $('#walkHud').style.display='none';
   const we=$('#whEnter');if(we)we.style.display='none';
-  document.body.style.touchAction='';
+  const st=$('#stage');if(st)st.classList.remove('walking');
+  walkTouch(false);
+  TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;PTR=null;
   WALK.ask=null;
   WALK=null;}
+/* 任何「离开步行场景回到文本节点」的路径都必须先清理步行状态，防止 HUD 残留与输入抢占 */
+function ensureNotWalking(){
+  if(WALK)stopWalk();
+  const st=$('#stage');if(st)st.classList.remove('walking');
+  const wb=$('#whEnter');if(wb)wb.style.display='none';
+  walkTouch(false);
+  TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;}
+
 function enterGate(){
   if(!WALK||!WALK.ask)return;
   const g=WALK.ask;
@@ -797,15 +867,20 @@ function exitWalk(){if(!WALK)return;const b=WALK.back;stopWalk();showNode(b,true
 function renderWalkScene(){
   const w=WALK,d=w.def;
   if(TOUCH.on){
+    /* 移动端手指行程远小于鼠标，灵敏度按屏高归一，避免「拖到屏幕边缘才走一步」 */
+    const k=Math.max(300,H)*0.0000105;
     if(TOUCH.side==='L'){
-      w.pz-=TOUCH.ddy*0.0045;
-      w.px+=TOUCH.ddx*0.0032;}
-    else w.angle+=TOUCH.ddx*0.0042;
+      w.pz-=TOUCH.ddy*k*1.25;
+      w.px+=TOUCH.ddx*k*0.62;}
+    else w.angle+=TOUCH.ddx*k*0.30;
     TOUCH.ddx=0;TOUCH.ddy=0;}
   const hw=d.w/2;
   w.px=Math.max(-hw+0.28,Math.min(hw-0.28,w.px));
-  w.pz=Math.max(0.5,Math.min(d.len-0.55,w.pz));
-  const cam={x:w.px,z:w.pz,ay:w.angle};
+  /* 有正前方门时停在门前 0.55m：否则会穿门板走到门后，门在整个视野里消失 */
+  let maxPz=d.len-0.55;
+  for(const g of d.gates||[])if(g.side==='F')maxPz=Math.min(maxPz,g.z-0.55);
+  w.pz=Math.max(0.5,Math.min(maxPz,w.pz));
+  const cam={x:w.px,z:w.pz,ay:w.angle,y:w.eye||0};
   renderMesh(w.mesh,{cam:cam});
   if(d.special==='chase'){
     const target=Math.min(d.len-0.8,Math.max(6,w.pz+4.5));
@@ -843,8 +918,9 @@ function renderWalkScene(){
   let ask=null;
   for(const g of d.gates||[]){
     const dgz=w.pz-g.z;
-    const near=Math.abs(dgz)<0.6;
-    const hit=g.side==='F'?(w.pz>=g.z-0.5&&Math.abs(w.px)<1.1):(near&&(g.side==='L'?w.px<-hw+0.6:g.side==='R'?w.px>hw-0.6:false));
+    const near=Math.abs(dgz)<0.85;
+    /* 判定放宽：手机上微调走位很难，「靠近即视为在门前」 */
+    const hit=g.side==='F'?(w.pz>=g.z-0.7&&Math.abs(w.px)<1.2):(near&&(g.side==='L'?w.px<-hw+0.95:g.side==='R'?w.px>hw-0.95:false));
     if(hit){ask=g;break;}}
   if(ask!==w.ask){
     w.ask=ask;
@@ -864,19 +940,25 @@ function renderWalkScene(){
     cx.font='600 12px sans-serif';cx.textAlign='center';
     cx.fillStyle=locked?'rgba(140,150,160,.75)':'rgba(140,240,255,.95)';
     cx.fillText(g.label+(locked?' 🔒':' ▸'),p[0],p[1]-Math.min(30,p[2]*0.3));}}
+/* 只跟随第一根手指：多指时其它手指的位移不能混进来，否则视角会乱跳 */
 addEventListener('touchstart',function(e){if(!WALK)return;
-  for(const t of e.changedTouches){if(!TOUCH.on){TOUCH.on=true;TOUCH.side=t.clientX<W/2?'L':'R';TOUCH.lx=t.clientX;TOUCH.ly=t.clientY;}}},{passive:false});
-addEventListener('touchmove',function(e){if(!WALK||!TOUCH.on)return;e.preventDefault();
-  for(const t of e.changedTouches){TOUCH.ddx+=t.clientX-TOUCH.lx;TOUCH.ddy+=t.clientY-TOUCH.ly;TOUCH.lx=t.clientX;TOUCH.ly=t.clientY;}},{passive:false});
-addEventListener('touchend',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
-addEventListener('touchcancel',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
+  for(const t of e.changedTouches){if(!TOUCH.on){TOUCH.on=true;TOUCH.id=t.identifier;
+    TOUCH.side=t.clientX<W/2?'L':'R';TOUCH.lx=t.clientX;TOUCH.ly=t.clientY;}}},{passive:false});
+addEventListener('touchmove',function(e){if(!WALK||!TOUCH.on)return;
+  if(e.cancelable)e.preventDefault();
+  for(const t of e.changedTouches){if(t.identifier!==TOUCH.id)continue;
+    TOUCH.ddx+=t.clientX-TOUCH.lx;TOUCH.ddy+=t.clientY-TOUCH.ly;TOUCH.lx=t.clientX;TOUCH.ly=t.clientY;}},{passive:false});
+function touchOff(){TOUCH.on=false;TOUCH.id=-1;TOUCH.ddx=0;TOUCH.ddy=0;}
+addEventListener('touchend',function(e){
+  for(const t of e.changedTouches){if(t.identifier===TOUCH.id){touchOff();break;}}});
+addEventListener('touchcancel',touchOff);
 /* 桌面端：鼠标 / 触控笔（Pointer Events），左半屏拖动前进、右半屏拖动环视 */
 let PTR=null;
 addEventListener('pointerdown',function(e){
-  if(!WALK||e.pointerType==='touch')return;
+  if(!WALK||TOUCH.on||e.pointerType==='touch')return;
   PTR={x:e.clientX,y:e.clientY,side:e.clientX<W/2?'L':'R'};},{passive:true});
 addEventListener('pointermove',function(e){
-  if(!WALK||!PTR)return;
+  if(!WALK||!PTR||TOUCH.on||e.pointerType==='touch')return;
   const dx=e.clientX-PTR.x,dy=e.clientY-PTR.y;
   PTR.x=e.clientX;PTR.y=e.clientY;
   if(PTR.side==='L'){WALK.pz-=dy*0.006;WALK.px+=dx*0.004;}
@@ -884,7 +966,8 @@ addEventListener('pointermove',function(e){
 addEventListener('pointerup',function(){PTR=null;});
 addEventListener('pointercancel',function(){PTR=null;});
 function renderFrame(t){
-  T=t/1000;FOC=Math.min(W,H)*1.6*(CFG.quality==='low'?0.86:1);
+  T=t/1000;if(!W||!H)sizeSky();
+  FOC=Math.min(W||360,H||640)*1.6*(CFG.quality==='low'?0.86:1);
   for(let i=0;i<3;i++)cur[i]+=(tgt[i]-cur[i])*.025;
   if(scene==='dream'||(WALK&&WALK.def.light==='day'))dreamSky();
   else{cx.fillStyle='rgb('+(cur[0]|0)+','+(cur[1]|0)+','+(cur[2]|0)+')';cx.fillRect(0,0,W,H);}
@@ -1166,6 +1249,7 @@ function go(to){
 function showNode(id,silent){
   const n=NODES[id];
   if(!n){showTitle();return;}
+  ensureNotWalking();
   S.node=id;if(!silent)applyFx(n.fx);
   if(CHMAP[id])unlockChapter(CHMAP[id]);
   for(const ck in CODEX){if(CODEX[ck].u.includes(id))unlockCodex(ck);}
@@ -1495,6 +1579,7 @@ function genCard(){
   box.scrollIntoView&&box.scrollIntoView({behavior:'smooth',block:'nearest'});}
 function showTitle(){
   if(typing){clearInterval(typing);typing=null;}
+  ensureNotWalking();
   BS=null;
   $('#hud').style.display='none';$('#endBox').style.display='none';
   $('#titleBox').style.display='flex';
@@ -1931,6 +2016,11 @@ choices:[{t:'返回标题',to:'!title'}]}
 };
 /* ================= 启动 ================= */
 addEventListener('resize',sizeSky);
+addEventListener('orientationchange',()=>{setTimeout(sizeSky,120);});
+if(window.visualViewport){
+  visualViewport.addEventListener('resize',()=>{sizeSky();});
+  visualViewport.addEventListener('scroll',()=>{sizeSky();});
+}
 sizeSky();buildAll();
 requestAnimationFrame(renderFrame);
 requestAnimationFrame(padLoop);

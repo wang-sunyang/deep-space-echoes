@@ -3,7 +3,7 @@
    - 导航请求：network-first，失败回落缓存（保证更新能拿到，断网也能玩）
    - 静态资源：cache-first，后台补写
    版本号改动即触发全量换缓存。 */
-const CACHE = 'dse-v2.0.0';
+const CACHE = 'dse-v2.0.3';
 const PRECACHE = [
   './',
   './index.html',
