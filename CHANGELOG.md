@@ -1,5 +1,21 @@
 # Changelog
 
+## v2.0.1 — 2026-11-27 — 可操作性修复（P0 / P1）
+
+**阻断级修复**
+- **桌面端步行卡死**：3D 步行场景原先只监听 `touchstart/touchmove/touchend`，桌面浏览器进入走廊后无法移动。现补 `pointerdown/pointermove/pointerup`（鼠标 / 触控笔，左半屏拖动前进、右半屏拖动环视），并把 `WASD` / 方向键在步行模式下路由为移动与转向（`↑↓` 前后、`←→` 转向），`Esc` 退出不变
+- **键盘焦点误触隐藏按钮**：`focusables()` 原先只过滤 `disabled`，`display:none` 的隐藏选项仍可被回车选中。现统一按可见性过滤（`isShown()`）
+- **主廊道三扇门不可回头**：舰桥 / 居住区 / 反应堆出口全部只回中央城区，第四扇「中央城区」门的 `flag:vb,flag:vh,flag:vr` 三旗永远无法同时为真。现上述节点均新增「沿原路返回主廊道」选项，中央门可正常开启
+
+**逻辑与数值修复**
+- **无人机战奖励双发**：`battle_drone1.winFx` 与胜利节点 `a1_drone_win.fx` 内容完全相同，`endBattleWin` 与 `showNode` 各发一次（能量 +50、备用电池 +2）。删除战斗节点重复的 `winFx`，奖励只发一次（+25 EN、+1 电池）
+- **战斗贴图错配**：`startBattle` 用 `[n.id]` 查表，而剧情节点无 `id` 字段，导致三场战斗全部贴 `memories` 模型。改用战斗节点自身的 `id` 入参，并为 `battle_caretaker` 补登记
+- **退出步行重复结算**：`exitWalk` 调 `showNode(WALK.back)` 会重放来源节点 `fx` 并再次 `stats.nodes++`（氧气被白扣）。`showNode` 新增静默模式，退出步行只恢复画面、不结算
+
+**统计口径**
+- 选项数 100 → 107（新增 7 条「返回主廊道」分支）
+- 回归测试：63 项冒烟检查 + 23 项事件级探针全通过
+
 ## v2.0 — 2026-11-26 — Second chapter, offline install, accessibility
 
 **内容扩展**

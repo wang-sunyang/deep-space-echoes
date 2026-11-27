@@ -770,7 +770,7 @@ function stopWalk(){
   $('#walkHud').style.display='none';
   document.body.style.touchAction='';
   WALK=null;}
-function exitWalk(){if(!WALK)return;const b=WALK.back;stopWalk();showNode(b);}
+function exitWalk(){if(!WALK)return;const b=WALK.back;stopWalk();showNode(b,true);}
 function renderWalkScene(){
   const w=WALK,d=w.def;
   if(TOUCH.on){
@@ -839,6 +839,19 @@ addEventListener('touchmove',function(e){if(!WALK||!TOUCH.on)return;e.preventDef
   for(const t of e.changedTouches){TOUCH.ddx+=t.clientX-TOUCH.lx;TOUCH.ddy+=t.clientY-TOUCH.ly;TOUCH.lx=t.clientX;TOUCH.ly=t.clientY;}},{passive:false});
 addEventListener('touchend',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
 addEventListener('touchcancel',function(){TOUCH.on=false;TOUCH.ddx=0;TOUCH.ddy=0;});
+/* 桌面端：鼠标 / 触控笔（Pointer Events），左半屏拖动前进、右半屏拖动环视 */
+let PTR=null;
+addEventListener('pointerdown',function(e){
+  if(!WALK||e.pointerType==='touch')return;
+  PTR={x:e.clientX,y:e.clientY,side:e.clientX<W/2?'L':'R'};},{passive:true});
+addEventListener('pointermove',function(e){
+  if(!WALK||!PTR)return;
+  const dx=e.clientX-PTR.x,dy=e.clientY-PTR.y;
+  PTR.x=e.clientX;PTR.y=e.clientY;
+  if(PTR.side==='L'){WALK.pz+=dy*0.006;WALK.px+=dx*0.004;}
+  else{WALK.angle+=dx*0.005;}},{passive:true});
+addEventListener('pointerup',function(){PTR=null;});
+addEventListener('pointercancel',function(){PTR=null;});
 function renderFrame(t){
   T=t/1000;FOC=Math.min(W,H)*1.6*(CFG.quality==='low'?0.86:1);
   for(let i=0;i<3;i++)cur[i]+=(tgt[i]-cur[i])*.025;
@@ -986,6 +999,12 @@ document.head.appendChild(_st);
 
 /* ================= 键盘 / 手柄导航 ================= */
 const PAD={index:null,menu:false,last:[],sel:0,active:false};
+function isShown(b){
+  if(!b||b.disabled)return false;
+  if(b.style&&b.style.display==='none')return false;
+  // 真实浏览器中被 display:none 祖先隐藏时 offsetParent 为 null；测试桩无该属性则放行
+  if(b.offsetParent===null)return false;
+  return true;}
 function focusables(){
   const box=$('#setBox');
   if(box&&box.style.display==='flex')return [...document.querySelectorAll('#setBox button')];
@@ -998,7 +1017,7 @@ function focusables(){
   const tb=$('#titleBox');
   if(tb&&tb.style.display==='flex'){
     return [...document.querySelectorAll('#titleBox button')].filter(b=>b.style.display!=='none');}
-  return [...document.querySelectorAll('#choices .choice')].filter(b=>!b.disabled);}
+  return [...document.querySelectorAll('#choices .choice')].filter(isShown);}
 document.addEventListener('keydown',()=>document.documentElement.classList.add('keyboard-nav'),{passive:true});
 document.addEventListener('touchstart',()=>document.documentElement.classList.remove('keyboard-nav'),{passive:true});
 function navMove(dir){
@@ -1030,6 +1049,14 @@ addEventListener('keydown',function(e){
   if(k==='Escape'){
     if(WALK){exitWalk();}else navBack();
     e.preventDefault();return;}
+  if(WALK){
+    /* 步行：WASD / 方向键 移动与转向（桌面端无触摸时的唯一通路） */
+    const kk=k.length===1?k.toLowerCase():k;
+    if(k==='ArrowUp'||kk==='w'){WALK.pz+=0.5;e.preventDefault();return;}
+    if(k==='ArrowDown'||kk==='s'){WALK.pz-=0.5;e.preventDefault();return;}
+    if(k==='ArrowLeft'||kk==='a'){WALK.angle-=0.10;e.preventDefault();return;}
+    if(k==='ArrowRight'||kk==='d'){WALK.angle+=0.10;e.preventDefault();return;}
+    if(k==='Enter'||k===' '){e.preventDefault();return;}}
   if(k==='ArrowUp'||k==='w'||k==='W'){navMove(-1);e.preventDefault();return;}
   if(k==='ArrowDown'||k==='s'||k==='S'){navMove(1);e.preventDefault();return;}
   if(k==='ArrowLeft'||k==='ArrowRight'){navMove(k==='ArrowLeft'?-1:1);e.preventDefault();return;}
@@ -1102,13 +1129,13 @@ function go(to){
   if(to==='!retreat'){showNode(S.battleRetreat);return;}
   if(to.startsWith('!walk:')){startWalk(to.slice(6));return;}
   showNode(to);}
-function showNode(id){
+function showNode(id,silent){
   const n=NODES[id];
   if(!n){showTitle();return;}
-  S.node=id;applyFx(n.fx);
+  S.node=id;if(!silent)applyFx(n.fx);
   if(CHMAP[id])unlockChapter(CHMAP[id]);
   for(const ck in CODEX){if(CODEX[ck].u.includes(id))unlockCodex(ck);}
-  S.stats.nodes++;
+  if(!silent)S.stats.nodes++;
   if(S.flags.trust_aiden)unlockAch('kind');
   if(S.flags.scan_aiden)unlockAch('detective');
   if(S.flags.dream_seen)unlockAch('dreamer');
@@ -1154,7 +1181,7 @@ function startBattle(n,id){
   $('#text').style.display='none';$('#choices').style.display='none';
   $('#battleBox').style.display='block';$('#stage').scrollTop=0;
   setBG('danger');$('#chapterTag').textContent='· 战斗 ·';
-  setBattleEnemy({battle_drone1:'drone',battle_memories:'memories',battle_guard:'guard'}[n.id]||'memories');
+  setBattleEnemy({battle_drone1:'drone',battle_memories:'memories',battle_guard:'guard',battle_caretaker:'guard'}[id]||'memories');
   bLog(n.intro||('遭遇 '+n.enemy.name+'！'));AU.warn();
   drawBattle();resetNav();}
 function bLog(m){const el=$('#bLog');
@@ -1551,18 +1578,21 @@ b1_bridge:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray'
 text:'舰桥。全景舷窗外是永恒的星空。主控台蒙着灰，你擦开一个角落，屏幕居然还能亮。\n航行日志，2089 年 3 月：\n「3 月 12 日：引擎核心裂缝，辐射泄漏。全船 5126 人，预估存活窗口 48 小时。」\n「3 月 13 日：暴动。一半船员涌向救生舱——救生舱只有 400 个位子。」\n「3 月 14 日：他们去了圣坛舱。他们说，回响可以带我们回家。」\n日志到此为止。零号调出导航记录：「奇怪。这艘船两百年里……一直在原地绕圈。像舍不得走。」',
 choices:[
 {t:'把全部日志下载到萤火号',to:'a1_hub',fx:{en:-10,flag:'log_full'}},
-{t:'只带走关键记录',to:'a1_hub'}]},
+{t:'只带走关键记录',to:'a1_hub'},
+{t:'沿原路返回主廊道',to:'!walk:corridor'}]},
 b1_habitat:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'vh',o2:-5},
 text:'居住区。房间门大多开着，桌上摆着没喝完的水杯，床铺整整齐齐。像所有人只是出门散步，然后，再也没回来。\n你在儿童活动室停下。墙上贴着一幅画：一头蓝色大鲸鱼，驮着一座亮着灯的城市。角落署名：艾登，7 岁。\n旁边的储物柜里，有几瓶未开封的氧气瓶。\n零号：「还有一间屋子被反锁，门上有抓痕。」',
 choices:[
 {t:'拿走氧气瓶',to:'b1_habitat2',fx:{o2:25,item:'o2can'}},
 {t:'查看反锁的房间',to:'b1_letter',fx:{o2:-3}},
-{t:'回收完就离开',to:'a1_hub'}]},
+{t:'回收完就离开',to:'a1_hub'},
+{t:'沿着廊道继续走',to:'!walk:corridor'}]},
 b1_habitat2:{ch:'第一章 · 寂静方舟',bg:'ship',who:'零号',
 text:'你收好氧气瓶，呼吸面罩里灌进新鲜氧气。\n想了想，你还是走向走廊尽头那间反锁的屋子。门上的抓痕很深，像有人从里面，想出来。',
 choices:[
 {t:'撬开房门',to:'b1_letter',fx:{o2:-3}},
-{t:'算了，别碰它',to:'a1_hub'}]},
+{t:'算了，别碰它',to:'a1_hub'},
+{t:'沿着廊道继续走',to:'!walk:corridor'}]},
 b1_letter:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'letter',o2:-4},
 text:'你撬开锁。屋里只有一张床、一张桌子，和桌上的一封信。\n「致后来的人：\n我叫陈默，伊甸园号的水培师。我拒绝进入圣坛。我不相信那个东西许诺的乐园。死就是死，我不逃。\n如果有一天有人找到这里——请替我看一眼地球的海。\n陈默，2089.3.14」\n信纸旁边，倒着一个空的安眠药瓶。\n「他选择了自己的结局。」零号说。',
 choices:[{t:'把信收好，继续探索',to:'b1_shadow'}]},
@@ -1570,23 +1600,29 @@ b1_shadow:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray'
 text:'突然，走廊尽头有个人影一闪而过。脚步很轻，像赤脚踩在金属地板上。\n「船长，热成像没有目标。那东西没有体温。」零号的声音绷紧了。',
 choices:[
 {t:'追上去（3D 步行）',to:'!walk:chase',fx:{o2:-6}},
-{t:'慢慢退出去',to:'a1_hub'}]},
+{t:'慢慢退出去',to:'a1_hub'},
+{t:'沿着廊道继续走',to:'!walk:corridor'}]},
 b1_chase:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',
 text:'你追到走廊尽头，只看见空气。地上有一串小脚印，光着脚的，十岁左右。\n脚印在最后一扇门前凭空消失。\n零号：「能量读数在这个位置出现过一个尖峰，然后归零。船长，这东西……不是实体。」',
-choices:[{t:'返回中央大厅',to:'a1_hub'}]},
+choices:[
+{t:'返回中央大厅',to:'a1_hub'},
+{t:'沿原路返回主廊道',to:'!walk:corridor'}]},
 b1_reactor:{ch:'第一章 · 寂静方舟',bg:'ship',who:'旁白',whoClass:'gray',fx:{flag:'vr',o2:-5},
 text:'反应堆舱。核心还在运转，低沉的嗡鸣像巨兽的心跳。仪表显示，它在用某种未知的方式维持着整艘船的生命系统——维持了两百年。\n角落里堆着几组高能电池，接口还新着。\n「拆电池能补充萤火号的能量储备。」零号提醒，「但可能触发安保无人机。」',
 choices:[
 {t:'回收电池',to:'battle_drone1'},
-{t:'不冒这个险',to:'a1_hub'}]},
+{t:'不冒这个险',to:'a1_hub'},
+{t:'沿着廊道继续走',to:'!walk:corridor'}]},
 battle_drone1:{type:'battle',bg:'danger',
 intro:'你刚拔下第一块电池，天花板上就亮起了红灯。两台安保无人机从舱顶滑出，武器口对准了你。',
 enemy:{name:'安保无人机 ×2',hp:80,atk:14,skill:{every:3,name:'集束扫射',mul:1.6}},
-win:'a1_drone_win',winFx:{en:25,item:'bat'},
+win:'a1_drone_win',
 lose:'battle_lose',retreat:'a1_hub'},
 a1_drone_win:{ch:'第一章 · 寂静方舟',bg:'ship',who:'零号',fx:{en:25,item:'bat'},
 text:'无人机在火花中坠落，你把它俩的电池也拆了——一块备用电池入袋，能量储备也补上了。收获不错。\n「安保系统已经烂了两百年，反应还是这么快。」零号评价，「要是没烂，咱们刚才就成筛子了。」',
-choices:[{t:'返回中央大厅',to:'a1_hub'}]},
+choices:[
+{t:'返回中央大厅',to:'a1_hub'},
+{t:'沿着廊道继续走',to:'!walk:corridor'}]},
 a1_hub:{ch:'第一章 · 寂静方舟',bg:'station',who:'旁白',whoClass:'gray',fx:{o2:-5},
 text:'中央城区。巨大的穹顶下，广场、商铺、绿化带一应俱全。树木早已枯死，只剩下灰白的枝干。\n这里能容纳五千人。此刻，只有你的脚步声。\n突然，全船广播响了。\n一个孩子的声音，带着电流杂音：\n「……有人吗？你、你是真的吗？」',
 alt:[{cond:'flag:signal_clue',text:'中央城区。巨大的穹顶下，广场、商铺、绿化带一应俱全。树木早已枯死，只剩下灰白的枝干。\n这里能容纳五千人。此刻，只有你的脚步声。\n突然，全船广播响了。\n一个孩子的声音，带着电流杂音：\n「……有人吗？你、你是真的吗？」\n你浑身一震——就是这个声音，藏在求救信号的最底层。',}],
