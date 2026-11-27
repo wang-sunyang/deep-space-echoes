@@ -4,7 +4,7 @@
 
 > 🇨🇳 [中文版 README](README.zh-CN.md)
 
-A single-file sci-fi interactive fiction that runs entirely in your browser: a hand-written software 3D renderer, a procedurally synthesized soundtrack, a 8,600-word original story, 60 story nodes, 4 turn-based battles, and **9 endings** — all packed into 138 KB of vanilla HTML/CSS/JS. No build step. No libraries. No CDN.
+A single-file sci-fi interactive fiction that runs entirely in your browser: a hand-written software 3D renderer, a procedurally synthesized soundtrack, a 8,600-word original story, 60 story nodes, 4 turn-based battles, and **9 endings** — all packed into 144 KB of vanilla HTML/CSS/JS. No build step. No libraries. No CDN.
 
 ![social preview](assets/social-preview.png)
 
@@ -92,7 +92,7 @@ See [CHANGELOG.md](CHANGELOG.md). Publishing & promotion playbook: [PUBLISH.md](
 
 《深空回响》是一款单文件科幻互动小说：公元 2289 年，打捞船「萤火号」收到失踪两百年的殖民方舟「伊甸园号」的求救信号。船上没有活人，却有 5126 个沉睡的灵魂、一个守候两百年不肯睡去的男孩艾登，和一个不理解「死亡」为何物的古老意识「回响」。
 
-- 零依赖单文件（约 138 KB），离线可玩，手机竖屏优化
+- 零依赖单文件（约 144 KB），离线可玩，手机竖屏优化
 - 手写软件 3D 渲染（无 WebGL）、WebAudio 实时合成配乐
 - 60 个剧情节点、4 场回合制战斗（敌人有专属技能）、9 个结局
 - 二周目「回声模式」解锁角色隐藏独白；结局生成可分享的旅途复盘与分享卡；16 个成就；章节回放

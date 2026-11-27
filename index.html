@@ -25,8 +25,16 @@ body{background:#04060c;color:var(--txt);font-family:-apple-system,"PingFang SC"
 #hudTop{display:flex;align-items:center;gap:8px;justify-content:space-between;margin-bottom:6px;}
 #chapterTag{font-size:12px;letter-spacing:3px;color:var(--cyan);opacity:.85;text-shadow:0 0 8px rgba(127,231,255,.5);white-space:nowrap;}
 #hudBtns{display:flex;gap:6px;}
-.hbtn{font-size:13px;padding:3px 8px;border-radius:8px;border:1px solid rgba(127,231,255,.3);background:rgba(20,45,65,.5);color:var(--cyan);cursor:pointer;}
+.hbtn{font-size:13px;padding:3px 8px;border-radius:8px;border:1px solid rgba(127,231,255,.3);background:rgba(20,45,65,.5);color:var(--cyan);cursor:pointer;min-width:36px;min-height:36px;display:inline-flex;align-items:center;justify-content:center;}
 .hbtn:active{background:rgba(127,231,255,.25);}
+@media (pointer:coarse){.hbtn{min-width:44px;min-height:44px;}}
+#bRetreat{margin-top:8px;width:100%;min-height:44px;font-size:13px;border-radius:10px;
+  border:1px solid rgba(255,150,150,.45);background:rgba(60,20,25,.45);color:#ffb3b3;cursor:pointer;}
+#bHint{font-size:12px;color:#ffd08a;margin-top:8px;min-height:16px;text-align:center;line-height:1.5;}
+#bRetreat.warn{border-color:#ff6b6b;background:rgba(120,25,30,.75);color:#fff;}
+#whEnter{margin-top:6px;min-height:44px;padding:0 14px;border-radius:10px;font-size:14px;
+  border:1px solid rgba(127,231,255,.55);background:rgba(20,60,80,.7);color:var(--cyan);cursor:pointer;}
+#whEnter:active{background:rgba(127,231,255,.3);}
 #bars{display:flex;flex-direction:column;gap:4px;}
 .bar{display:flex;align-items:center;gap:6px;font-size:11px;color:#9cc3d4;}
 .bar .lab{width:34px;letter-spacing:1px;flex:none;}
@@ -167,6 +175,7 @@ html.reduced-motion *{animation:none!important;transition:none!important;}
   <div class="whTop"><span id="whName"></span><button class="hbtn" id="whExit" onclick="exitWalk()">✕ 退出</button></div>
   <div id="whTip"></div>
   <div id="whMsg" style="display:none"></div>
+  <button id="whEnter" style="display:none" onclick="enterGate()">进入</button>
 </div>
 <div id="app">
   <div id="hud">
@@ -196,13 +205,15 @@ html.reduced-motion *{animation:none!important;transition:none!important;}
       <div id="bActs">
         <button class="bact" onclick="act('shoot')">脉冲射击<small>EN-12 · 伤害18~34</small></button>
         <button class="bact" onclick="act('over')">过载射击<small>EN-28 · 伤害42~66</small></button>
-        <button class="bact" onclick="act('shield')">护盾充能<small>船体+25</small></button>
-        <button class="bact" onclick="act('scan')">战术扫描<small>EN-8 · 弱点×1.5</small></button>
+        <button class="bact" onclick="act('shield')">护盾充能<small>EN-6 · 船体+25</small></button>
+        <button class="bact" onclick="act('scan')">战术扫描<small>EN-8 · 2 次攻击×1.5</small></button>
       </div>
+      <div id="bHint" role="status" aria-live="polite"></div>
       <div id="bItems">
         <button class="bact bi" onclick="useItem('o2can')">🧪 氧气罐<small>船体+30 · ×1</small></button>
         <button class="bact bi" onclick="useItem('bat')">🔋 备用电池<small>能量+25 · ×1</small></button>
       </div>
+      <button id="bRetreat" onclick="askRetreat()">⇤ 撤离战斗</button>
     </div>
   </div>
 </div>
@@ -359,7 +370,11 @@ MU.tick=function(){
 /* ================= 3D 软渲染引擎 ================= */
 const cv=$('#sky'),cx=cv.getContext('2d');
 let W=0,H=0,T=0,FOC=624;
-function sizeSky(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+function sizeSky(){const dpr=Math.max(1,Math.min(2,window.devicePixelRatio||1));
+  W=innerWidth;H=innerHeight;
+  cv.width=Math.round(W*dpr);cv.height=Math.round(H*dpr);
+  cv.style.width=W+'px';cv.style.height=H+'px';
+  cx.setTransform(dpr,0,0,dpr,0,0);}
 const BG={space:[4,7,15],ship:[11,13,19],station:[17,12,23],sanctum:[21,9,27],dream:[26,15,9],danger:[23,5,6],void:[2,2,4],walk:[6,7,14]};
 let cur=[4,7,15],tgt=[4,7,15],scene='space',enemyKey=null,lastEnemy={x:0,y:0};
 function setBG(n){scene=n;enemyKey=null;if(BG[n])tgt=BG[n];MU.start(n);}
@@ -753,6 +768,7 @@ function startWalk(id){
   AU.init();
   if(WALK&&WALK.def!==d)WALK=null;
   if(!WALK)WALK={def:d,mesh:buildWalkMesh(d),px:0,pz:0.5,angle:0,back:S.node};
+  WALK.ask=null;
   PROJY=0.45;
   $('#text').style.display='none';$('#choices').style.display='none';
   $('#battleBox').style.display='none';$('#echo').style.display='none';
@@ -768,14 +784,21 @@ function stopWalk(){
   if(!WALK)return;
   PROJY=0.30;
   $('#walkHud').style.display='none';
+  const we=$('#whEnter');if(we)we.style.display='none';
   document.body.style.touchAction='';
+  WALK.ask=null;
   WALK=null;}
+function enterGate(){
+  if(!WALK||!WALK.ask)return;
+  const g=WALK.ask;
+  if(g.need&&!condOk(g.need)){showWalkMsg(g.lock||'这扇门还打不开');return;}
+  AU.ui();stopWalk();go(g.node);}
 function exitWalk(){if(!WALK)return;const b=WALK.back;stopWalk();showNode(b,true);}
 function renderWalkScene(){
   const w=WALK,d=w.def;
   if(TOUCH.on){
     if(TOUCH.side==='L'){
-      w.pz+=TOUCH.ddy*0.0045;
+      w.pz-=TOUCH.ddy*0.0045;
       w.px+=TOUCH.ddx*0.0032;}
     else w.angle+=TOUCH.ddx*0.0042;
     TOUCH.ddx=0;TOUCH.ddy=0;}
@@ -817,13 +840,21 @@ function renderWalkScene(){
     const p=projCam(0,1.3,d.len,w);
     if(p){cx.fillStyle='rgba(150,240,220,0.15)';
       cx.beginPath();cx.arc(p[0],p[1],Math.max(12,p[2]*0.42),0,6.29);cx.fill();}}
+  let ask=null;
   for(const g of d.gates||[]){
     const dgz=w.pz-g.z;
     const near=Math.abs(dgz)<0.6;
     const hit=g.side==='F'?(w.pz>=g.z-0.5&&Math.abs(w.px)<1.1):(near&&(g.side==='L'?w.px<-hw+0.6:g.side==='R'?w.px>hw-0.6:false));
-    if(hit){
-      if(g.need&&!condOk(g.need)){showWalkMsg(g.lock||'');}
-      else{stopWalk();go(g.node);return;}}}
+    if(hit){ask=g;break;}}
+  if(ask!==w.ask){
+    w.ask=ask;
+    const btn=$('#whEnter');
+    if(btn){
+      if(ask){const locked=ask.need&&!condOk(ask.need);
+        btn.style.display='inline-flex';
+        btn.textContent=locked?('🔒 '+ask.label):('进入 · '+ask.label);
+        if(locked)showWalkMsg(ask.lock||'这扇门还打不开');}
+      else btn.style.display='none';}}
   if(d.end&&w.pz>=d.end.z){stopWalk();go(d.end.node);return;}
   for(const g of d.gates||[]){
     const p=projCam(g.side==='F'?0:(g.side==='L'?-d.w/2:d.w/2),1.15,g.z,w);
@@ -848,7 +879,7 @@ addEventListener('pointermove',function(e){
   if(!WALK||!PTR)return;
   const dx=e.clientX-PTR.x,dy=e.clientY-PTR.y;
   PTR.x=e.clientX;PTR.y=e.clientY;
-  if(PTR.side==='L'){WALK.pz+=dy*0.006;WALK.px+=dx*0.004;}
+  if(PTR.side==='L'){WALK.pz-=dy*0.006;WALK.px+=dx*0.004;}
   else{WALK.angle+=dx*0.005;}},{passive:true});
 addEventListener('pointerup',function(){PTR=null;});
 addEventListener('pointercancel',function(){PTR=null;});
@@ -897,6 +928,7 @@ function loadSave(){try{
   S.node=m.node;S.o2=m.o2;S.en=m.en;S.hp=m.hp;S.flags=m.flags;S.items=m.items;S.log=m.log;
   S.stats=m.stats;S.lastBattle=m.lastBattle;S.battleRetreat=m.battleRetreat;
   S.winFx=m.winFx;S.curEnding=m.curEnding;S.v=SAVE_V;
+  S.o2=Math.max(0,Math.min(100,S.o2||0));S.en=Math.max(0,Math.min(200,S.en||0));S.hp=Math.max(0,Math.min(130,S.hp||0));
   if(fromV1){save();try{localStorage.removeItem(LEGACY_SAVEK)}catch(e){}}   // 迁移后归档，旧键不再保留
   return true;
 }catch(e){return false}}
@@ -926,14 +958,15 @@ function applyFx(fx){if(!fx)return;
     else if(k==='log'){S.log.push(v);if(S.log.length>60)S.log.shift();}
     else if(typeof v==='string'&&v.startsWith('='))S[k]=+v.slice(1);
     else S[k]=(S[k]??0)+v;}
-  S.o2=Math.max(0,S.o2);S.en=Math.max(0,S.en);S.hp=Math.max(0,S.hp);
+  S.o2=Math.max(0,Math.min(100,S.o2));S.en=Math.max(0,Math.min(200,S.en));S.hp=Math.max(0,Math.min(130,S.hp));
   updateHud();}
 
 /* ================= HUD ================= */
+const CAP={o2:100,en:200,hp:130};
 function updateHud(){
-  $('#nO2').textContent=S.o2;$('#fO2').style.width=S.o2+'%';$('#fO2').classList.toggle('low',S.o2<=25);
-  $('#nEN').textContent=S.en;$('#fEN').style.width=S.en+'%';$('#fEN').classList.toggle('low',S.en<=15);
-  $('#nHP').textContent=S.hp;$('#fHP').style.width=Math.min(100,S.hp)+'%';$('#fHP').classList.toggle('low',S.hp<=30);
+  $('#nO2').textContent=S.o2;$('#fO2').style.width=Math.min(100,S.o2/CAP.o2*100)+'%';$('#fO2').classList.toggle('low',S.o2<=25);
+  $('#nEN').textContent=S.en;$('#fEN').style.width=Math.min(100,S.en/CAP.en*100)+'%';$('#fEN').classList.toggle('low',S.en<=15);
+  $('#nHP').textContent=S.hp;$('#fHP').style.width=Math.min(100,S.hp/CAP.hp*100)+'%';$('#fHP').classList.toggle('low',S.hp<=30);
   $('#sndBtn').textContent=AU.on?'🔊':'🔇';}
 function toggleSound(){AU.on=!AU.on;updateHud();
   if(AU.on){AU.init();AU.ui();MU.start(scene);}else MU.stop();}
@@ -1056,6 +1089,7 @@ addEventListener('keydown',function(e){
     if(k==='ArrowDown'||kk==='s'){WALK.pz-=0.5;e.preventDefault();return;}
     if(k==='ArrowLeft'||kk==='a'){WALK.angle-=0.10;e.preventDefault();return;}
     if(k==='ArrowRight'||kk==='d'){WALK.angle+=0.10;e.preventDefault();return;}
+    if(kk==='e'||k==='Enter'){enterGate();e.preventDefault();return;}
     if(k==='Enter'||k===' '){e.preventDefault();return;}}
   if(k==='ArrowUp'||k==='w'||k==='W'){navMove(-1);e.preventDefault();return;}
   if(k==='ArrowDown'||k==='s'||k==='S'){navMove(1);e.preventDefault();return;}
@@ -1176,7 +1210,9 @@ function renderChoices(list){
 let BS=null;
 function startBattle(n,id){
   S.lastBattle=id;S.battleRetreat=n.retreat||'a1_hub';S.winFx=n.winFx||null;S.stats.battles++;save();
-  BS={id:id,enemy:{name:n.enemy.name,hp:n.enemy.hp,max:n.enemy.hp,atk:n.enemy.atk},skill:n.enemy.skill||null,turn:0,scanned:false,busy:false};
+  BS={id:id,enemy:{name:n.enemy.name,hp:n.enemy.hp,max:n.enemy.hp,atk:n.enemy.atk},skill:n.enemy.skill||null,turn:0,scanned:0,busy:false,log:[]};
+  RETREAT_ARM=false;
+  const br=$('#bRetreat');if(br){br.classList.remove('warn');br.textContent='⇤ 撤离战斗';}
   $('#endBox').style.display='none';$('#titleBox').style.display='none';$('#codexBox').style.display='none';$('#hud').style.display='block';
   $('#text').style.display='none';$('#choices').style.display='none';
   $('#battleBox').style.display='block';$('#stage').scrollTop=0;
@@ -1184,24 +1220,52 @@ function startBattle(n,id){
   setBattleEnemy({battle_drone1:'drone',battle_memories:'memories',battle_guard:'guard',battle_caretaker:'guard'}[id]||'memories');
   bLog(n.intro||('遭遇 '+n.enemy.name+'！'));AU.warn();
   drawBattle();resetNav();}
-function bLog(m){const el=$('#bLog');
-  el.innerHTML='<b>▸ '+m.replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</b><br>'+el.innerHTML;}
+function bLog(m){const el=$('#bLog');if(!el)return;
+  const line='<b>▸ '+String(m).replace(/</g,'&lt;').replace(/\n/g,'<br>')+'</b>';
+  const store=(BS&&(BS.log=BS.log||[]))||null;
+  if(store){store.unshift(line);if(store.length>40)store.length=40;el.innerHTML=store.join('<br>');}
+  else el.innerHTML=line+'<br>'+el.innerHTML;}
+let RETREAT_ARM=false;
 function useItem(k){
   if(!BS||BS.busy)return;
-  S.stats.items++;
-  if(k==='o2can'){if(!S.items.o2can)return;S.items.o2can--;S.hp=Math.min(130,S.hp+30);bLog('使用氧气罐，船体 +30（'+S.hp+'）');AU.tone(600,.2,'sine',.04);}
-  else if(k==='bat'){if(!S.items.bat)return;S.items.bat--;S.en=Math.min(200,S.en+25);bLog('使用备用电池，能量 +25（'+S.en+'）');AU.tone(820,.2,'sine',.04);}
+  if(k==='o2can'){
+    if(!S.items.o2can)return;
+    S.items.o2can--;S.stats.items++;
+    S.hp=Math.min(130,S.hp+30);bLog('使用氧气罐，船体 +30（'+S.hp+'）');AU.tone(600,.2,'sine',.04);}
+  else if(k==='bat'){
+    if(!S.items.bat)return;
+    S.items.bat--;S.stats.items++;
+    S.en=Math.min(200,S.en+25);bLog('使用备用电池，能量 +25（'+S.en+'）');AU.tone(820,.2,'sine',.04);}
+  else return;
   FX.shield();
   BS.busy=true;setTimeout(enemyTurn,600);
   drawBattle();}
+function askRetreat(){
+  if(!BS||BS.busy)return;
+  const b=$('#bRetreat');if(!b)return;
+  if(!RETREAT_ARM){
+    RETREAT_ARM=true;BSEsc(b);return;}
+  RETREAT_ARM=false;b.classList.remove('warn');
+  b.textContent='⇤ 撤离战斗';
+  const back=S.battleRetreat||'a1_hub';
+  BS.busy=true;
+  setTimeout(function(){
+    BS=null;
+    S.stats.battles=Math.max(0,S.stats.battles-1);
+    $('#battleBox').style.display='none';$('#text').style.display='';$('#choices').style.display='';
+    showToast('已撤离战斗');
+    showNode(back,true);},260);}
+function BSEsc(b){
+  b.classList.add('warn');b.textContent='⚠ 再点一次确认撤离';
+  setTimeout(function(){if(RETREAT_ARM){RETREAT_ARM=false;b.classList.remove('warn');b.textContent='⇤ 撤离战斗';}},3000);}
 function drawBattle(){
   if(!BS)return;
   $('#bName').textContent=BS.enemy.name+'　'+Math.max(0,BS.enemy.hp)+' / '+BS.enemy.max;
   $('#bEhp').style.width=(Math.max(0,BS.enemy.hp)/BS.enemy.max*100)+'%';
   const acts=$('#bActs').children;
-  acts[0].disabled=BS.busy||S.en<12;
+  acts[0].disabled=BS.busy||(S.en<12&&S.hp<=18);
   acts[1].disabled=BS.busy||S.en<28;
-  acts[2].disabled=BS.busy;
+  acts[2].disabled=BS.busy||S.en<6;
   acts[3].disabled=BS.busy||S.en<8;
   const bi=$('#bItems').children;
   if(bi.length){
@@ -1209,16 +1273,35 @@ function drawBattle(){
     bi[0].disabled=BS.busy||S.items.o2can<=0;
     bi[1].innerHTML='🔋 备用电池 ×'+S.items.bat+'<small>能量+25</small>';
     bi[1].disabled=BS.busy||S.items.bat<=0;}
+  const br=$('#bRetreat');if(br)br.disabled=BS.busy;
+  const hint=$('#bHint');
+  if(hint){
+    let msg='';
+    if(BS.busy)msg='';
+    else if(S.en<6)msg='能量见底（EN '+S.en+'）：护盾与扫描均不可用'+(S.hp>18?'，可消耗船体应急放电':'，建议撤离战斗');
+    else if(S.en<12&&S.items.bat>0)msg='能量不足（EN '+S.en+'）：可用备用电池补能，或消耗船体应急放电';
+    else if(S.en<12)msg='能量不足（EN '+S.en+'）：消耗 10 船体可应急放电，或撤离战斗';
+    else if(S.en<28)msg='能量偏低（EN '+S.en+'）：过载射击需 EN 28';
+    hint.textContent=msg;}
   updateHud();}
 function act(k){
   if(!BS||BS.busy)return;
-  if(k==='shield'){S.hp=Math.min(130,S.hp+25);bLog('护盾充能，船体 +25（'+S.hp+'）');AU.tone(500,.12,'sine',.04);FX.shield();BS.busy=true;setTimeout(enemyTurn,550);}
-  else if(k==='scan'){if(S.en<8)return;S.en-=8;BS.scanned=true;bLog('扫描完成：锁定弱点，下次攻击 ×1.5');AU.tone(1100,.1,'sine',.03);FX.flashE=0.12;BS.busy=true;setTimeout(enemyTurn,550);}
+  if(k==='shield'){
+    if(S.en<6){bLog('能量不足，护盾无法充能（需 EN 6）');return;}
+    S.en-=6;S.hp=Math.min(130,S.hp+25);
+    bLog('护盾充能，能量 -6，船体 +25（'+S.hp+'）');AU.tone(500,.12,'sine',.04);FX.shield();
+    BS.busy=true;setTimeout(enemyTurn,550);}
+  else if(k==='scan'){if(S.en<8){bLog('能量不足，无法扫描（需 EN 8）');return;}S.en-=8;BS.scanned=2;bLog('扫描完成：锁定弱点，随后 2 次攻击 ×1.5');AU.tone(1100,.1,'sine',.03);FX.flashE=0.12;BS.busy=true;setTimeout(enemyTurn,550);}
   else{
-    const need=k==='shoot'?12:28;if(S.en<need)return;
-    S.en-=need;
-    let d=k==='shoot'?R(18,34):R(42,66);
-    if(BS.scanned){d=Math.round(d*1.5);bLog('命中弱点！伤害 ×1.5');}
+    const need=k==='shoot'?12:28;
+    let emergency=false;
+    if(S.en<need){
+      if(k==='shoot'&&S.hp>18){emergency=true;}         // 应急放电：以船体为燃料
+      else{bLog('能量不足，无法开火（需 EN '+need+'）');return;}}
+    if(emergency){S.hp=Math.max(1,S.hp-10);bLog('能量枯竭——以船体放电，船体 -10（HP '+S.hp+'）');}
+    else S.en-=need;
+    let d=emergency?R(10,18):(k==='shoot'?R(18,34):R(42,66));
+    if(BS.scanned>0){d=Math.round(d*1.5);BS.scanned--;bLog('命中弱点！伤害 ×1.5（剩余 '+BS.scanned+' 次）');}
     BS.enemy.hp-=d;bLog(k==='shoot'?'脉冲射击命中，造成 '+d+' 伤害':'过载射击命中，造成 '+d+' 伤害');
     AU.shot();FX.fireBeam();FX.hitEnemy();
     if(BS.enemy.hp<=0){BS.enemy.hp=0;return endBattleWin();}
@@ -1241,6 +1324,9 @@ function enemyTurn(){
   BS.busy=false;drawBattle();}
 function endBattleWin(){
   if(!BS)return;const id=BS.id;BS.busy=true;
+  const SALVAGE=id==='battle_drone1'?0:20;   // 无人机首战奖励已在胜利节点发放，避免叠发
+  if(SALVAGE){S.en=Math.min(200,S.en+SALVAGE);S.hp=Math.min(130,S.hp+15);
+    bLog('拆解残骸：能量 +'+SALVAGE+'、船体 +15（EN '+S.en+' / HP '+S.hp+'）');}
   bLog('目标沉默。');AU.win();FX.explode();
   setTimeout(()=>{
     const n=NODES[id];
@@ -1265,8 +1351,9 @@ function showEnding(id){
   S.curEnding=id;
   const fresh=[];
   if(unlockAch(ENDACH[id]||id))fresh.push(ACH[ENDACH[id]||id]);
-  const ended=Object.keys(all).length;
-  if(ended>=Object.keys(ENDACH).length&&unlockAch('all'))fresh.push(ACH.all);
+  const TL=['ending_rest','ending_symbiosis','ending_truth','ending_dream','ending_burn','ending_refuse','ending_keeper','ending_seed','ending_death'];
+  const ended=TL.filter(t=>!!all[t]).length;
+  if(ended>=TL.length&&unlockAch('all'))fresh.push(ACH.all);
   const echoWas=echoOn();
   try{localStorage.setItem(ECHOK,'1')}catch(e){}
   $('#hud').style.display='none';$('#titleBox').style.display='none';
@@ -1279,7 +1366,6 @@ function showEnding(id){
   if(fresh.length){$('#newAch').innerHTML='🏆 新成就解锁：'+fresh.map(a=>a.i+' '+a.n).join('　')+(echoWas?'':'　✦ 回声模式已开启');$('#newAch').style.display='block';}
   else if(!echoWas){$('#newAch').innerHTML='✦ 回声模式已开启：二周目将看到角色隐藏的内心独白';$('#newAch').style.display='block';}
   else $('#newAch').style.display='none';
-  const TL=['ending_rest','ending_symbiosis','ending_truth','ending_dream','ending_burn','ending_refuse','ending_keeper','ending_seed','ending_death'];
   let html='已解锁结局 '+ended+' / '+TL.length+'<br>';
   for(const t of TL){const nm=NODES[t].title;
     html+=all[t]?'<span class="got">● '+nm+'</span><br>':'<span class="miss">○ ？？？</span><br>';}
@@ -1514,8 +1600,8 @@ function closeCodexEntry(){$('#codexBox').style.display='none';}
 const CHK='deep_space_echoes_chapters_v1';
 const CHAPTERS={c0:{t:'序章 · 信号',node:'p0_signal',flags:null},
   c1:{t:'第一章 · 寂静方舟',node:'a1_airlock',flags:null},
-  c2:{t:'第二章 · 回响',node:'e1_sanctum',flags:{vb:1,vh:1,vr:1,trust_aiden:1}},
-  c3:{t:'第三章 · 抉择',node:'f4_truth',flags:{vb:1,vh:1,vr:1,trust_aiden:1}}};
+  c2:{t:'第二章 · 回响',node:'e1_sanctum',flags:{vb:1,vh:1,vr:1,trust_aiden:1,letter:1}},
+  c3:{t:'第三章 · 抉择',node:'f4_truth',flags:{vb:1,vh:1,vr:1,trust_aiden:1,letter:1}}};
 const CHMAP={p0_signal:'c0',a1_airlock:'c1',e1_sanctum:'c2',f4_truth:'c3'};
 function unlockChapter(id){try{const d=JSON.parse(localStorage.getItem(CHK))||{};
   if(!d[id]){d[id]=1;localStorage.setItem(CHK,JSON.stringify(d));}}catch(e){}}
@@ -1615,7 +1701,7 @@ choices:[
 {t:'沿着廊道继续走',to:'!walk:corridor'}]},
 battle_drone1:{type:'battle',bg:'danger',
 intro:'你刚拔下第一块电池，天花板上就亮起了红灯。两台安保无人机从舱顶滑出，武器口对准了你。',
-enemy:{name:'安保无人机 ×2',hp:80,atk:14,skill:{every:3,name:'集束扫射',mul:1.6}},
+enemy:{name:'安保无人机 ×2',hp:72,atk:13,skill:{every:3,name:'集束扫射',mul:1.6}},
 win:'a1_drone_win',
 lose:'battle_lose',retreat:'a1_hub'},
 a1_drone_win:{ch:'第一章 · 寂静方舟',bg:'ship',who:'零号',fx:{en:25,item:'bat'},
@@ -1652,7 +1738,7 @@ text:'圣坛舱的大门是一整块暗色合金，门上刻满了不属于任�
 choices:[{t:'走向圣坛舱大门（3D 步行）',to:'!walk:gate'}]},
 battle_memories:{type:'battle',bg:'danger',
 intro:'记忆体们无声地扑了上来。',
-enemy:{name:'记忆体 ×2',hp:110,atk:12,skill:{every:4,name:'记忆缠绕',heal:18}},
+enemy:{name:'记忆体 ×2',hp:98,atk:11,skill:{every:4,name:'记忆缠绕',heal:18}},
 win:'e1_sanctum',winFx:{o2:-3},
 lose:'battle_lose',retreat:'a1_hub'},
 e1_annex:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',fx:{o2:-2},
@@ -1669,7 +1755,7 @@ text:'你掰开检修门，锈屑簌簌落下。\n门后的空气干燥、发甜
 choices:[{t:'那就打一场',to:'battle_caretaker'},{t:'……退出去，不打扰',to:'e1_sanctum'}]},
 battle_caretaker:{type:'battle',bg:'danger',
 intro:'守墓体拖着锈穿的身体冲了过来，抹布从它手上滑落。',
-enemy:{name:'守墓体',hp:95,atk:13,skill:{every:3,name:'墓土覆盖',mul:1.4,drain:6}},
+enemy:{name:'守墓体',hp:86,atk:12,skill:{every:3,name:'墓土覆盖',mul:1.4,drain:6}},
 win:'e1_annex_win',winFx:{o2:-2},
 lose:'battle_lose',retreat:'e1_sanctum'},
 e1_annex_win:{ch:'第二章 · 回响',bg:'sanctum',who:'旁白',whoClass:'gray',
@@ -1774,7 +1860,7 @@ text:'你设定反应堆超载程序。倒计时：十分钟。\n回响没有反
 choices:[{t:'迎战守卫，守住超载程序',to:'battle_guard'}]},
 battle_guard:{type:'battle',bg:'danger',
 intro:'回响守卫——由整艘船两百年的记忆凝成的巨物——向你扑来。',
-enemy:{name:'回响守卫',hp:105,atk:14,skill:{every:4,name:'记忆洪流',mul:1.5,drain:6}},
+enemy:{name:'回响守卫',hp:84,atk:13,skill:{every:4,name:'记忆洪流',mul:1.5,drain:6}},
 win:'k_burn_3',winFx:{o2:-3},
 lose:'ending_death',retreat:'k_burn_2'},
 k_burn_3:{ch:'第三章 · 抉择',bg:'danger',who:'旁白',whoClass:'gray',
